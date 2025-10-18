@@ -132,6 +132,18 @@ class PembayaranSupplier(db.Model):
     metode_pembayaran = db.Column(db.String(20), nullable=False) 
     supplier = db.relationship('Supplier')
 
+class StokMasuk(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=False)
+    lapak_id = db.Column(db.Integer, db.ForeignKey('lapak.id'), nullable=False)
+    supplier_id = db.Column(db.Integer, db.ForeignKey('supplier.id'), nullable=True)
+    jumlah = db.Column(db.Integer, nullable=False)
+    tanggal_masuk = db.Column(db.Date, default=datetime.date.today, nullable=False)
+    
+    # Relationships untuk memudahkan query
+    product = db.relationship('Product')
+    lapak = db.relationship('Lapak')
+    supplier = db.relationship('Supplier')
 # ===================================================================
 # CLI & Rute Halaman
 # ===================================================================
@@ -141,13 +153,13 @@ def init_db_command():
     print("Database telah diinisialisasi.")
 @app.cli.command("seed-db")
 def seed_db_command():
-    """Menghapus database dan membuat data demo komprehensif untuk 90 hari."""
+    """Menghapus database dan membuat data demo komprehensif untuk 90 hari dengan alur baru."""
     db.drop_all()
     db.create_all()
     print("Database dibersihkan...")
 
     # ===================================================================
-    ## 1. Buat Pengguna Inti (Owner & Admin)
+    ## 1. Buat Pengguna Inti (Owner & Admin) - TANPA PERUBAHAN
     # ===================================================================
     owner = Admin(nama_lengkap="Owner Utama", nik="0000000000000000", username="owner", email="owner@app.com", nomor_kontak="0", password="owner")
     admin_andi = Admin(nama_lengkap="Andi (PJ Kopo)", nik="1111111111111111", username="andi", email="andi@app.com", nomor_kontak="0811", password="andi")
@@ -157,7 +169,7 @@ def seed_db_command():
     print("=> Pengguna (Owner, Admin) berhasil dibuat.")
 
     # ===================================================================
-    ## 2. Buat Lapak
+    ## 2. Buat Lapak - TANPA PERUBAHAN
     # ===================================================================
     lapak_kopo = Lapak(lokasi="Lapak Kopo", penanggung_jawab=admin_andi)
     lapak_buah_batu = Lapak(lokasi="Lapak Buah Batu", penanggung_jawab=admin_budi)
@@ -166,63 +178,67 @@ def seed_db_command():
     print("=> Lapak (Kopo, Buah Batu) berhasil dibuat.")
 
     # ===================================================================
-    ## 3. Buat Supplier & Produk (LEBIH BANYAK VARIASI)
+    ## 3. Buat Supplier & Produk - TANPA PERUBAHAN
     # ===================================================================
-    # --- Supplier 1 ---
     supplier_roti = Supplier(nama_supplier="Roti Lezat Bakery", username="roti", kontak="0851", nomor_register="REG001", password="roti", metode_pembayaran="BCA", nomor_rekening="112233")
     supplier_roti.balance = SupplierBalance(balance=0.0)
-    db.session.add(supplier_roti)
+    supplier_minuman = Supplier(nama_supplier="Minuman Segar Haus", username="minuman", kontak="0852", nomor_register="REG002", password="minuman", metode_pembayaran="DANA", nomor_rekening="08521234")
+    supplier_snack = Supplier(nama_supplier="Cemilan Gurih Nusantara", username="snack", kontak="0853", nomor_register="REG003", password="snack", metode_pembayaran="BCA", nomor_rekening="445566")
+    supplier_snack.balance = SupplierBalance(balance=0.0)
+    db.session.add_all([supplier_roti, supplier_minuman, supplier_snack])
     db.session.flush()
     db.session.add_all([
         Product(nama_produk="Roti Tawar Gandum", supplier_id=supplier_roti.id, harga_beli=12000, harga_jual=15000),
         Product(nama_produk="Roti Sobek Coklat", supplier_id=supplier_roti.id, harga_beli=10000, harga_jual=13000),
-        Product(nama_produk="Donat Gula", supplier_id=supplier_roti.id, harga_beli=4000, harga_jual=6000)
-    ])
-
-    # --- Supplier 2 ---
-    supplier_minuman = Supplier(nama_supplier="Minuman Segar Haus", username="minuman", kontak="0852", nomor_register="REG002", password="minuman", metode_pembayaran="DANA", nomor_rekening="08521234")
-    supplier_minuman.balance = SupplierBalance(balance=0.0)
-    db.session.add(supplier_minuman)
-    db.session.flush()
-    db.session.add_all([
+        Product(nama_produk="Donat Gula", supplier_id=supplier_roti.id, harga_beli=4000, harga_jual=6000),
         Product(nama_produk="Es Teh Manis", supplier_id=supplier_minuman.id, harga_beli=3000, harga_jual=5000),
         Product(nama_produk="Jus Jambu", supplier_id=supplier_minuman.id, harga_beli=6000, harga_jual=8000),
-        Product(nama_produk="Kopi Susu Gula Aren", supplier_id=supplier_minuman.id, harga_beli=15000, harga_jual=18000)
-    ])
-
-    # --- Supplier 3 ---
-    supplier_snack = Supplier(nama_supplier="Cemilan Gurih Nusantara", username="snack", kontak="0853", nomor_register="REG003", password="snack", metode_pembayaran="BCA", nomor_rekening="445566")
-    supplier_snack.balance = SupplierBalance(balance=0.0)
-    db.session.add(supplier_snack)
-    db.session.flush()
-    db.session.add_all([
+        Product(nama_produk="Kopi Susu Gula Aren", supplier_id=supplier_minuman.id, harga_beli=15000, harga_jual=18000),
         Product(nama_produk="Keripik Singkong Balado", supplier_id=supplier_snack.id, harga_beli=8000, harga_jual=10000),
         Product(nama_produk="Tahu Crispy", supplier_id=supplier_snack.id, harga_beli=7000, harga_jual=10000)
     ])
-    
     db.session.commit()
     print("=> 3 Supplier dengan total 8 produk berhasil dibuat.")
 
     # ===================================================================
-    ## 4. (DIHAPUS) Alokasi Produk ke Lapak
+    ## 4. (BARU) Alokasi Produk ke Lapak
     # ===================================================================
-    print("=> Alokasi produk kini dilakukan oleh Admin Lapak, langkah ini dilewati.")
+    all_products = Product.query.all()
+    lapak_kopo.products = random.sample(all_products, k=6) # Lapak Kopo menjual 6 produk acak
+    lapak_buah_batu.products = random.sample(all_products, k=5) # Lapak Buah Batu menjual 5 produk acak
+    db.session.commit()
+    print("=> Produk berhasil dialokasikan ke setiap lapak.")
 
     # ===================================================================
-    ## 5. Buat Data Transaksi Historis (Laporan & Pembayaran) untuk 90 hari
+    ## 5. (DIROMBAK TOTAL) Buat Data Transaksi Historis
     # ===================================================================
-    print("Membuat data transaksi historis (90 hari)...")
+    print("Membuat data transaksi historis (90 hari) dengan alur baru...")
     today = datetime.date.today()
     all_lapaks = [lapak_kopo, lapak_buah_batu]
-    all_products = Product.query.all()
-
-    for i in range(90, 0, -1):
+    
+    for i in range(90, -1, -1): # Loop dari 90 hari lalu sampai hari ini
         current_date = today - timedelta(days=i)
         
         for lapak in all_lapaks:
-            if random.random() < 0.85:
-                status = 'Menunggu Konfirmasi' if i <= 10 and random.random() < 0.5 else 'Terkonfirmasi'
+            # 5.1. SIMULASI STOK MASUK SECARA ACAK
+            if random.random() < 0.2: # 20% kemungkinan ada stok masuk di hari itu
+                product_to_stock = random.choice(lapak.products) # Pilih produk acak DARI lapak itu
+                jumlah_masuk = random.randint(15, 40)
+                stok_masuk = StokMasuk(
+                    product_id=product_to_stock.id,
+                    lapak_id=lapak.id,
+                    supplier_id=product_to_stock.supplier_id,
+                    jumlah=jumlah_masuk,
+                    tanggal_masuk=current_date
+                )
+                db.session.add(stok_masuk)
+
+            # 5.2. BUAT LAPORAN HARIAN (jika bukan hari ini atau random)
+            # Jangan buat laporan untuk hari ini agar bisa dites manual
+            if i > 0 and random.random() < 0.95: # 95% kemungkinan lapak buka
                 
+                # Inisiasi laporan
+                status = 'Terkonfirmasi'
                 report = LaporanHarian(lapak_id=lapak.id, tanggal=current_date, status=status,
                                         total_pendapatan=0, total_biaya_supplier=0, total_produk_terjual=0,
                                         pendapatan_cash=0, pendapatan_qris=0, pendapatan_bca=0)
@@ -232,15 +248,33 @@ def seed_db_command():
                 total_pendapatan_harian = 0
                 total_biaya_harian = 0
                 total_terjual_harian = 0
-                
-                # Pilih beberapa produk secara acak untuk dijual hari itu
-                products_for_the_day = random.sample(all_products, k=random.randint(3, 6))
 
-                for product in products_for_the_day:
-                    stok_awal = random.randint(10, 30)
-                    terjual = random.randint(1, stok_awal - 2)
+                # 5.3. KALKULASI STOK & PENJUALAN UNTUK SETIAP PRODUK DI LAPAK
+                for product in lapak.products:
+                    kemarin = current_date - timedelta(days=1)
+                    
+                    # Hitung Stok Awal dari data kemarin + stok masuk hari ini
+                    stok_akhir_kemarin = db.session.query(LaporanHarianProduk.stok_akhir)\
+                        .join(LaporanHarian).filter(
+                            LaporanHarian.lapak_id == lapak.id,
+                            LaporanHarian.tanggal == kemarin,
+                            LaporanHarianProduk.product_id == product.id
+                        ).scalar() or 0
+                    
+                    stok_masuk_hari_ini = db.session.query(func.sum(StokMasuk.jumlah))\
+                        .filter_by(lapak_id=lapak.id, product_id=product.id, tanggal_masuk=current_date).scalar() or 0
+
+                    stok_awal = stok_akhir_kemarin + stok_masuk_hari_ini
+                    
+                    # Simulasi Penjualan
+                    if stok_awal > 0:
+                        terjual = random.randint(0, min(stok_awal, 25)) # Jual maks 25 pcs
+                    else:
+                        terjual = 0
+                    
                     stok_akhir = stok_awal - terjual
                     
+                    # Buat rincian produk untuk laporan
                     total_harga_jual = terjual * product.harga_jual
                     total_harga_beli = terjual * product.harga_beli
                     
@@ -250,34 +284,43 @@ def seed_db_command():
                                                   total_harga_beli=total_harga_beli)
                     db.session.add(rincian)
 
+                    # Akumulasi total
                     total_pendapatan_harian += total_harga_jual
                     total_biaya_harian += total_harga_beli
                     total_terjual_harian += terjual
 
+                    # Update saldo supplier jika laporan terkonfirmasi
                     if status == 'Terkonfirmasi' and product.supplier:
                         product.supplier.balance.balance += total_harga_beli
                 
+                # Update total laporan harian
                 report.total_pendapatan = total_pendapatan_harian
                 report.total_biaya_supplier = total_biaya_harian
                 report.total_produk_terjual = total_terjual_harian
-                report.pendapatan_qris = total_pendapatan_harian * 0.5
-                report.pendapatan_cash = total_pendapatan_harian * 0.5
-                report.manual_total_pendapatan = total_pendapatan_harian
-    
-        if random.random() < 0.1:
-            all_suppliers = [supplier_roti, supplier_minuman, supplier_snack]
-            supplier_to_pay = random.choice(all_suppliers)
+                # Asumsi pembayaran terbagi rata
+                report.pendapatan_qris = total_pendapatan_harian * 0.4
+                report.pendapatan_bca = total_pendapatan_harian * 0.3
+                report.pendapatan_cash = total_pendapatan_harian * 0.3
+
+    # 5.4. SIMULASI PEMBAYARAN SUPPLIER SECARA ACAK
+    all_suppliers = [supplier_roti, supplier_minuman, supplier_snack]
+    for _ in range(15): # Buat sekitar 15 transaksi pembayaran acak
+        supplier_to_pay = random.choice(all_suppliers)
+        if supplier_to_pay.balance and supplier_to_pay.balance.balance > 50000:
+            payment_amount = random.randint(50000, int(supplier_to_pay.balance.balance))
             payment = PembayaranSupplier(
                 supplier=supplier_to_pay,
-                tanggal_pembayaran=current_date,
-                jumlah_pembayaran=random.randint(50000, 200000),
+                tanggal_pembayaran=today - timedelta(days=random.randint(1, 80)),
+                jumlah_pembayaran=payment_amount,
                 metode_pembayaran=supplier_to_pay.metode_pembayaran
             )
+            supplier_to_pay.balance.balance -= payment_amount
             db.session.add(payment)
 
     db.session.commit()
-    print("=> Data historis berhasil dibuat.")
+    print("=> Data historis (stok masuk & laporan) berhasil dibuat.")
     print("\nDatabase siap untuk demo! Silakan jalankan aplikasi.")
+    
 @app.route('/')
 def login_page():
     return render_template('index.html')
@@ -819,86 +862,182 @@ def get_chart_data():
     except Exception as e:
         logging.error(f"Error getting chart data: {str(e)}")
         return jsonify({"success": False, "message": str(e)}), 500
+      
+@app.route('/api/lapak/get_suppliers', methods=['GET'])
+def lapak_get_suppliers():
+    """Endpoint untuk admin lapak mendapatkan daftar semua supplier."""
+    try:
+        suppliers = Supplier.query.order_by(Supplier.nama_supplier).all()
+        supplier_list = [{"id": s.id, "name": s.nama_supplier} for s in suppliers]
+        return jsonify({"success": True, "suppliers": supplier_list})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+@app.route('/api/lapak/add_product', methods=['POST'])
+def lapak_add_product():
+    """Endpoint untuk admin lapak menambah produk baru."""
+    data = request.json
+    lapak_id = data.get('lapak_id')
+    supplier_id = data.get('supplier_id')
+    nama_produk = data.get('nama_produk')
+
+    # Cek duplikasi
+    existing_product = Product.query.filter_by(nama_produk=nama_produk, supplier_id=supplier_id).first()
+    if existing_product:
+        return jsonify({"success": False, "message": f"Produk '{nama_produk}' dari supplier ini sudah ada."}), 409
+
+    try:
+        # Buat produk baru
+        lapak = Lapak.query.get(lapak_id)
+        new_product = Product(
+            nama_produk=nama_produk,
+            supplier_id=supplier_id if str(supplier_id).lower() != 'manual' else None,
+            harga_beli=float(data.get('harga_beli', HARGA_BELI_DEFAULT)),
+            harga_jual=float(data.get('harga_jual', HARGA_JUAL_DEFAULT)),
+            is_manual=str(supplier_id).lower() == 'manual'
+        )
+        # Asosiasikan dengan lapak
+        new_product.lapaks.append(lapak) 
+        db.session.add(new_product)
+        db.session.commit()
+        
+        return jsonify({"success": True, "message": "Produk berhasil ditambahkan.", "product": {"id": new_product.id, "nama_produk": new_product.nama_produk}})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "message": f"Terjadi kesalahan: {str(e)}"}), 500
+
+
+@app.route('/api/lapak/record_stok', methods=['POST'])
+def lapak_record_stok():
+    """Endpoint untuk admin lapak mencatat stok masuk."""
+    data = request.json
+    product_id = data.get('product_id')
+    lapak_id = data.get('lapak_id')
+    jumlah = int(data.get('jumlah', 0))
+    
+    product = Product.query.get(product_id)
+    if not product or jumlah <= 0:
+        return jsonify({"success": False, "message": "Data tidak valid."}), 400
+
+    try:
+        new_stok = StokMasuk(
+            product_id=product_id,
+            lapak_id=lapak_id,
+            supplier_id=product.supplier_id,
+            jumlah=jumlah,
+            tanggal_masuk=datetime.date.today()
+        )
+        db.session.add(new_stok)
+        db.session.commit()
+
+        return jsonify({"success": True, "message": f"{jumlah} stok untuk '{product.nama_produk}' berhasil dicatat."})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "message": f"Terjadi kesalahan: {str(e)}"}), 500      
+
 # --- LAPAK API ---
 # --- REVISI: Kirim info pembayaran ke frontend ---
 @app.route('/api/get_data_buat_catatan/<int:lapak_id>', methods=['GET'])
 def get_data_buat_catatan(lapak_id):
     today = datetime.date.today()
-    # Pengecekan laporan yang sudah ada tetap berlaku
+    kemarin = today - timedelta(days=1)
+    
     if LaporanHarian.query.filter_by(lapak_id=lapak_id, tanggal=today).first():
         return jsonify({"success": False, "message": "Laporan untuk hari ini sudah dibuat.", "already_exists": True}), 409
-    
-    # Ambil SEMUA supplier beserta produk mereka, tanpa filter lapak
-    all_suppliers = Supplier.query.options(joinedload(Supplier.products)).order_by(Supplier.nama_supplier).all()
-    
-    suppliers_data = []
-    for s in all_suppliers:
-        suppliers_data.append({
-            "id": s.id,
-            "name": s.nama_supplier,
-            "products": [{
-                "id": p.id,
-                "name": p.nama_produk,
-                "harga_jual": p.harga_jual,
-                "harga_beli": p.harga_beli
-            } for p in s.products]
+
+    lapak = Lapak.query.options(joinedload(Lapak.products).joinedload(Product.supplier)).get(lapak_id)
+    if not lapak:
+        return jsonify({"success": False, "message": "Lapak tidak ditemukan"}), 404
+
+    products_data = []
+    for product in lapak.products:
+        # 1. Cari stok akhir dari laporan kemarin
+        stok_akhir_kemarin = db.session.query(LaporanHarianProduk.stok_akhir)\
+            .join(LaporanHarian, LaporanHarian.id == LaporanHarianProduk.laporan_id)\
+            .filter(LaporanHarian.lapak_id == lapak_id, 
+                    LaporanHarian.tanggal == kemarin, 
+                    LaporanHarianProduk.product_id == product.id).scalar() or 0
+
+        # 2. Jumlahkan semua stok yang masuk hari ini
+        total_stok_masuk_hari_ini = db.session.query(func.sum(StokMasuk.jumlah))\
+            .filter_by(lapak_id=lapak_id, product_id=product.id, tanggal_masuk=today).scalar() or 0
+            
+        # 3. Hitung stok awal hari ini
+        stok_awal_hari_ini = stok_akhir_kemarin + total_stok_masuk_hari_ini
+        
+        products_data.append({
+            "id": product.id,
+            "name": product.nama_produk,
+            "supplier_name": product.supplier.nama_supplier if product.supplier else "Manual",
+            "harga_jual": product.harga_jual,
+            "harga_beli": product.harga_beli,
+            "stok_awal": stok_awal_hari_ini,
         })
         
-    return jsonify({"success": True, "data": suppliers_data})
+    return jsonify({"success": True, "data": products_data})
 
 @app.route('/api/submit_catatan_harian', methods=['POST'])
 def submit_catatan_harian():
     data = request.json
     lapak_id = data.get('lapak_id')
     today = datetime.date.today()
+
     if LaporanHarian.query.filter_by(lapak_id=lapak_id, tanggal=today).first():
         return jsonify({"success": False, "message": "Laporan untuk hari ini sudah pernah dibuat."}), 400
+
     try:
         total_pendapatan_auto, total_biaya_auto, total_terjual_auto = 0.0, 0.0, 0
         
-        new_report = LaporanHarian(lapak_id=lapak_id, tanggal=today, total_pendapatan=0, total_biaya_supplier=0,
+        new_report = LaporanHarian(
+            lapak_id=lapak_id, 
+            tanggal=today,
             pendapatan_cash=float(data['rekap_pembayaran'].get('cash') or 0),
             pendapatan_qris=float(data['rekap_pembayaran'].get('qris') or 0),
-            pendapatan_bca=float(data['rekap_pembayaran'].get('bca') or 0), total_produk_terjual=0,
+            pendapatan_bca=float(data['rekap_pembayaran'].get('bca') or 0),
             manual_pendapatan_cash=float(data['rekap_pembayaran'].get('cash') or 0),
             manual_pendapatan_qris=float(data['rekap_pembayaran'].get('qris') or 0),
             manual_pendapatan_bca=float(data['rekap_pembayaran'].get('bca') or 0),
-            manual_total_pendapatan=float(data['rekap_pembayaran'].get('total') or 0)
+            manual_total_pendapatan=float(data['rekap_pembayaran'].get('total') or 0),
+            total_pendapatan=0, # Akan dihitung ulang
+            total_biaya_supplier=0, # Akan dihitung ulang
+            total_produk_terjual=0 # Akan dihitung ulang
         )
         db.session.add(new_report)
         db.session.flush()
+
         for prod_data in data.get('products', []):
-            product_id = prod_data.get('id')
             stok_awal = int(prod_data.get('stok_awal') or 0)
             stok_akhir = int(prod_data.get('stok_akhir') or 0)
-            if stok_awal == 0 and stok_akhir == 0: continue
-            
-            if not product_id:
-                if prod_data.get('nama_produk'):
-                    lapak = Lapak.query.get(lapak_id)
-                    new_product = Product(nama_produk=prod_data['nama_produk'],
-                        supplier_id=prod_data.get('supplier_id') if str(prod_data.get('supplier_id')).lower() != 'manual' else None,
-                        harga_beli=HARGA_BELI_DEFAULT, harga_jual=HARGA_JUAL_DEFAULT, is_manual=True)
-                    new_product.lapaks.append(lapak)
-                    db.session.add(new_product)
-                    db.session.flush()
-                    product_id = new_product.id
-                else: continue 
 
-            product = Product.query.get(product_id)
-            if not product: continue
+            # Lewati produk yang tidak disentuh
+            if stok_awal == 0 and stok_akhir == 0:
+                continue
             
+            product = Product.query.get(prod_data.get('id'))
+            if not product:
+                continue
+
             jumlah_terjual = max(0, stok_awal - stok_akhir)
             total_harga_jual = jumlah_terjual * product.harga_jual
             total_harga_beli = jumlah_terjual * product.harga_beli
 
-            rincian = LaporanHarianProduk(laporan_id=new_report.id, product_id=product.id, stok_awal=stok_awal, stok_akhir=stok_akhir, jumlah_terjual=jumlah_terjual, total_harga_jual=total_harga_jual, total_harga_beli=total_harga_beli)
+            rincian = LaporanHarianProduk(
+                laporan_id=new_report.id, 
+                product_id=product.id, 
+                stok_awal=stok_awal, 
+                stok_akhir=stok_akhir, 
+                jumlah_terjual=jumlah_terjual, 
+                total_harga_jual=total_harga_jual, 
+                total_harga_beli=total_harga_beli
+            )
             db.session.add(rincian)
-            db.session.add(StokHarian(lapak_id=lapak_id, product_id=product.id, jumlah_sisa=stok_akhir, tanggal=today))
+            
+            # Update total
             total_pendapatan_auto += total_harga_jual
             total_biaya_auto += total_harga_beli
             total_terjual_auto += jumlah_terjual
         
+        # Simpan total yang sudah dihitung ke laporan utama
         new_report.total_pendapatan = total_pendapatan_auto
         new_report.total_biaya_supplier = total_biaya_auto
         new_report.total_produk_terjual = total_terjual_auto
@@ -907,6 +1046,7 @@ def submit_catatan_harian():
         return jsonify({"success": True, "message": "Laporan harian berhasil dikirim!"})
     except Exception as e:
         db.session.rollback()
+        logging.error(f"Error submitting catatan harian: {str(e)}")
         return jsonify({"success": False, "message": f"Gagal menyimpan laporan: {str(e)}"}), 500
 
 @app.route('/api/get_history_laporan/<int:lapak_id>', methods=['GET'])
@@ -915,6 +1055,31 @@ def get_history_laporan(lapak_id):
         reports = LaporanHarian.query.filter_by(lapak_id=lapak_id).order_by(LaporanHarian.tanggal.desc()).all()
         report_list = [{"id": r.id, "tanggal": r.tanggal.isoformat(), "total_pendapatan": r.total_pendapatan, "total_produk_terjual": r.total_produk_terjual, "status": r.status} for r in reports]
         return jsonify({"success": True, "reports": report_list})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+@app.route('/api/supplier/stok_history/<int:supplier_id>', methods=['GET'])
+def get_supplier_stok_history(supplier_id):
+    try:
+        stok_history = db.session.query(
+            StokMasuk.tanggal_masuk,
+            Lapak.lokasi,
+            Product.nama_produk,
+            StokMasuk.jumlah
+        ).join(Product, Product.id == StokMasuk.product_id)\
+         .join(Lapak, Lapak.id == StokMasuk.lapak_id)\
+         .filter(StokMasuk.supplier_id == supplier_id)\
+         .order_by(StokMasuk.tanggal_masuk.desc())\
+         .all()
+        
+        history_list = [{
+            "tanggal": record.tanggal_masuk.strftime('%Y-%m-%d'),
+            "lokasi": record.lokasi,
+            "nama_produk": record.nama_produk,
+            "jumlah_masuk": record.jumlah
+        } for record in stok_history]
+
+        return jsonify({"success": True, "history": history_list})
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
 
