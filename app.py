@@ -159,7 +159,7 @@ def seed_db_command():
     print("Database dibersihkan...")
 
     # ===================================================================
-    ## 1. Buat Pengguna Inti (Owner & Admin) - TANPA PERUBAHAN
+    ## 1. Buat Pengguna Inti (Owner & Admin)
     # ===================================================================
     owner = Admin(nama_lengkap="Owner Utama", nik="0000000000000000", username="owner", email="owner@app.com", nomor_kontak="0", password="owner")
     admin_andi = Admin(nama_lengkap="Andi (PJ Kopo)", nik="1111111111111111", username="andi", email="andi@app.com", nomor_kontak="0811", password="andi")
@@ -169,7 +169,7 @@ def seed_db_command():
     print("=> Pengguna (Owner, Admin) berhasil dibuat.")
 
     # ===================================================================
-    ## 2. Buat Lapak - TANPA PERUBAHAN
+    ## 2. Buat Lapak
     # ===================================================================
     lapak_kopo = Lapak(lokasi="Lapak Kopo", penanggung_jawab=admin_andi)
     lapak_buah_batu = Lapak(lokasi="Lapak Buah Batu", penanggung_jawab=admin_budi)
@@ -178,15 +178,21 @@ def seed_db_command():
     print("=> Lapak (Kopo, Buah Batu) berhasil dibuat.")
 
     # ===================================================================
-    ## 3. Buat Supplier & Produk - TANPA PERUBAHAN
+    ## 3. Buat Supplier & Produk
     # ===================================================================
     supplier_roti = Supplier(nama_supplier="Roti Lezat Bakery", username="roti", kontak="0851", nomor_register="REG001", password="roti", metode_pembayaran="BCA", nomor_rekening="112233")
     supplier_roti.balance = SupplierBalance(balance=0.0)
+    
     supplier_minuman = Supplier(nama_supplier="Minuman Segar Haus", username="minuman", kontak="0852", nomor_register="REG002", password="minuman", metode_pembayaran="DANA", nomor_rekening="08521234")
+    # --- PERBAIKAN 1: Menambahkan baris yang hilang di sini ---
+    supplier_minuman.balance = SupplierBalance(balance=0.0)
+
     supplier_snack = Supplier(nama_supplier="Cemilan Gurih Nusantara", username="snack", kontak="0853", nomor_register="REG003", password="snack", metode_pembayaran="BCA", nomor_rekening="445566")
     supplier_snack.balance = SupplierBalance(balance=0.0)
+    
     db.session.add_all([supplier_roti, supplier_minuman, supplier_snack])
     db.session.flush()
+
     db.session.add_all([
         Product(nama_produk="Roti Tawar Gandum", supplier_id=supplier_roti.id, harga_beli=12000, harga_jual=15000),
         Product(nama_produk="Roti Sobek Coklat", supplier_id=supplier_roti.id, harga_beli=10000, harga_jual=13000),
@@ -201,43 +207,36 @@ def seed_db_command():
     print("=> 3 Supplier dengan total 8 produk berhasil dibuat.")
 
     # ===================================================================
-    ## 4. (BARU) Alokasi Produk ke Lapak
+    ## 4. Alokasi Produk ke Lapak
     # ===================================================================
     all_products = Product.query.all()
-    lapak_kopo.products = random.sample(all_products, k=6) # Lapak Kopo menjual 6 produk acak
-    lapak_buah_batu.products = random.sample(all_products, k=5) # Lapak Buah Batu menjual 5 produk acak
+    lapak_kopo.products = random.sample(all_products, k=6)
+    lapak_buah_batu.products = random.sample(all_products, k=5)
     db.session.commit()
     print("=> Produk berhasil dialokasikan ke setiap lapak.")
 
     # ===================================================================
-    ## 5. (DIROMBAK TOTAL) Buat Data Transaksi Historis
+    ## 5. Buat Data Transaksi Historis
     # ===================================================================
     print("Membuat data transaksi historis (90 hari) dengan alur baru...")
     today = datetime.date.today()
     all_lapaks = [lapak_kopo, lapak_buah_batu]
     
-    for i in range(90, -1, -1): # Loop dari 90 hari lalu sampai hari ini
+    for i in range(90, -1, -1):
         current_date = today - timedelta(days=i)
         
         for lapak in all_lapaks:
-            # 5.1. SIMULASI STOK MASUK SECARA ACAK
-            if random.random() < 0.2: # 20% kemungkinan ada stok masuk di hari itu
-                product_to_stock = random.choice(lapak.products) # Pilih produk acak DARI lapak itu
+            if random.random() < 0.2:
+                product_to_stock = random.choice(lapak.products)
                 jumlah_masuk = random.randint(15, 40)
                 stok_masuk = StokMasuk(
-                    product_id=product_to_stock.id,
-                    lapak_id=lapak.id,
-                    supplier_id=product_to_stock.supplier_id,
-                    jumlah=jumlah_masuk,
+                    product_id=product_to_stock.id, lapak_id=lapak.id,
+                    supplier_id=product_to_stock.supplier_id, jumlah=jumlah_masuk,
                     tanggal_masuk=current_date
                 )
                 db.session.add(stok_masuk)
 
-            # 5.2. BUAT LAPORAN HARIAN (jika bukan hari ini atau random)
-            # Jangan buat laporan untuk hari ini agar bisa dites manual
-            if i > 0 and random.random() < 0.95: # 95% kemungkinan lapak buka
-                
-                # Inisiasi laporan
+            if i > 0 and random.random() < 0.95:
                 status = 'Terkonfirmasi'
                 report = LaporanHarian(lapak_id=lapak.id, tanggal=current_date, status=status,
                                         total_pendapatan=0, total_biaya_supplier=0, total_produk_terjual=0,
@@ -249,32 +248,20 @@ def seed_db_command():
                 total_biaya_harian = 0
                 total_terjual_harian = 0
 
-                # 5.3. KALKULASI STOK & PENJUALAN UNTUK SETIAP PRODUK DI LAPAK
                 for product in lapak.products:
                     kemarin = current_date - timedelta(days=1)
-                    
-                    # Hitung Stok Awal dari data kemarin + stok masuk hari ini
                     stok_akhir_kemarin = db.session.query(LaporanHarianProduk.stok_akhir)\
                         .join(LaporanHarian).filter(
                             LaporanHarian.lapak_id == lapak.id,
                             LaporanHarian.tanggal == kemarin,
                             LaporanHarianProduk.product_id == product.id
                         ).scalar() or 0
-                    
                     stok_masuk_hari_ini = db.session.query(func.sum(StokMasuk.jumlah))\
                         .filter_by(lapak_id=lapak.id, product_id=product.id, tanggal_masuk=current_date).scalar() or 0
-
                     stok_awal = stok_akhir_kemarin + stok_masuk_hari_ini
-                    
-                    # Simulasi Penjualan
-                    if stok_awal > 0:
-                        terjual = random.randint(0, min(stok_awal, 25)) # Jual maks 25 pcs
-                    else:
-                        terjual = 0
-                    
+                    terjual = random.randint(0, min(stok_awal, 25)) if stok_awal > 0 else 0
                     stok_akhir = stok_awal - terjual
                     
-                    # Buat rincian produk untuk laporan
                     total_harga_jual = terjual * product.harga_jual
                     total_harga_beli = terjual * product.harga_beli
                     
@@ -284,27 +271,23 @@ def seed_db_command():
                                                   total_harga_beli=total_harga_beli)
                     db.session.add(rincian)
 
-                    # Akumulasi total
                     total_pendapatan_harian += total_harga_jual
                     total_biaya_harian += total_harga_beli
                     total_terjual_harian += terjual
 
-                    # Update saldo supplier jika laporan terkonfirmasi
-                    if status == 'Terkonfirmasi' and product.supplier:
+                    # --- PERBAIKAN 2: Menambahkan pengecekan `product.supplier.balance` ---
+                    if status == 'Terkonfirmasi' and product.supplier and product.supplier.balance:
                         product.supplier.balance.balance += total_harga_beli
                 
-                # Update total laporan harian
                 report.total_pendapatan = total_pendapatan_harian
                 report.total_biaya_supplier = total_biaya_harian
                 report.total_produk_terjual = total_terjual_harian
-                # Asumsi pembayaran terbagi rata
                 report.pendapatan_qris = total_pendapatan_harian * 0.4
                 report.pendapatan_bca = total_pendapatan_harian * 0.3
                 report.pendapatan_cash = total_pendapatan_harian * 0.3
 
-    # 5.4. SIMULASI PEMBAYARAN SUPPLIER SECARA ACAK
     all_suppliers = [supplier_roti, supplier_minuman, supplier_snack]
-    for _ in range(15): # Buat sekitar 15 transaksi pembayaran acak
+    for _ in range(15):
         supplier_to_pay = random.choice(all_suppliers)
         if supplier_to_pay.balance and supplier_to_pay.balance.balance > 50000:
             payment_amount = random.randint(50000, int(supplier_to_pay.balance.balance))
@@ -875,7 +858,7 @@ def lapak_get_suppliers():
 
 @app.route('/api/lapak/add_product', methods=['POST'])
 def lapak_add_product():
-    """Endpoint untuk admin lapak menambah produk baru."""
+    """Endpoint untuk admin lapak menambah produk baru (dengan harga default)."""
     data = request.json
     lapak_id = data.get('lapak_id')
     supplier_id = data.get('supplier_id')
@@ -887,16 +870,15 @@ def lapak_add_product():
         return jsonify({"success": False, "message": f"Produk '{nama_produk}' dari supplier ini sudah ada."}), 409
 
     try:
-        # Buat produk baru
         lapak = Lapak.query.get(lapak_id)
         new_product = Product(
             nama_produk=nama_produk,
             supplier_id=supplier_id if str(supplier_id).lower() != 'manual' else None,
-            harga_beli=float(data.get('harga_beli', HARGA_BELI_DEFAULT)),
-            harga_jual=float(data.get('harga_jual', HARGA_JUAL_DEFAULT)),
+            # PERUBAHAN DI SINI: Menggunakan harga default dari konstanta
+            harga_beli=HARGA_BELI_DEFAULT,
+            harga_jual=HARGA_JUAL_DEFAULT,
             is_manual=str(supplier_id).lower() == 'manual'
         )
-        # Asosiasikan dengan lapak
         new_product.lapaks.append(lapak) 
         db.session.add(new_product)
         db.session.commit()
