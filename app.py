@@ -1202,7 +1202,7 @@ def get_superowner_profit_details(owner_id):
         # dan terkait dengan lapak yang dikelola oleh admin/owner tersebut.
         # Ini adalah asumsi sederhana, jika satu owner bisa punya banyak lapak,
         # kita perlu join melalui relasi tersebut.
-        
+        # bla bla bla
         profit_history = db.session.query(
             LaporanHarian.tanggal,
             Lapak.lokasi,
