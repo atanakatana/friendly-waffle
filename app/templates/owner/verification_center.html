@@ -1,0 +1,29 @@
+<div id="owner-verification-center-page" class="page container py-4" style="display: none;">
+  <header class="d-flex align-items-center pb-3 mb-4 border-bottom">
+    <button class="btn btn-light me-3" onclick="showPage('owner-dashboard')">
+      <i class="bi bi-arrow-left"></i>
+    </button>
+    <h4 class="mb-0">Finalisasi Laporan (Siap Diteruskan)</h4>
+  </header>
+
+  <div id="verification-center-loading" class="text-center p-5">
+    <div class="spinner-border text-primary"></div>
+  </div>
+
+  <div id="verification-center-content" style="display: none;">
+    <div class="alert alert-info">
+      <i class="bi bi-info-circle-fill"></i>
+      Di sini Anda dapat meninjau semua laporan yang masuk dari admin lapak sebelum difinalisasi. Setelah semua
+      laporan diperiksa, klik tombol "Finalisasi" di bawah.
+    </div>
+
+    <div id="verification-report-list" class="list-group mb-4">
+    </div>
+
+    <div class="d-grid">
+      <button class="btn btn-success btn-lg" onclick="handleFinalizeReports()">
+        <i class="bi bi-check-all"></i> Finalisasi & Kirim Laporan Gabungan
+      </button>
+    </div>
+  </div>
+</div>

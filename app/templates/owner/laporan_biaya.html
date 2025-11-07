@@ -1,0 +1,30 @@
+<div id="owner-laporan-biaya-page" class="page container py-4">
+  <header class="d-flex align-items-center pb-3 mb-4 border-bottom">
+    <button class="btn btn-light me-3" onclick="showPage('owner-dashboard')">
+      <i class="bi bi-arrow-left"></i>
+    </button>
+    <h4 class="mb-0">Laporan Biaya Supplier Harian</h4>
+  </header>
+  <div class="row mb-3 align-items-center">
+    <div class="col-md-4">
+      <label for="laporan-biaya-datepicker" class="form-label">Pilih Tanggal Laporan:</label><input type="date"
+        class="form-control" id="laporan-biaya-datepicker" />
+    </div>
+    <div class="col-md-8">
+      <div class="card bg-warning text-dark mt-3">
+        <div class="card-body text-end">
+          <h6 class="card-title">
+            Total Biaya Supplier Tanggal Terpilih
+          </h6>
+          <h3 class="display-6" id="total-biaya-harian">Rp 0</h3>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="accordion" id="laporan-biaya-accordion">
+    <div class="text-center p-5">
+      <div class="spinner-border text-warning"></div>
+      <p class="mt-2 text-muted">Memuat data...</p>
+    </div>
+  </div>
+</div>

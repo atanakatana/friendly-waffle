@@ -1,0 +1,50 @@
+<div id="rekap-footer" class="sticky-footer footer-hidden style=" display: none">
+    <div id="footer-handle" class="text-center p-1 bg-light border-bottom" style="cursor: pointer;">
+      <i id="footer-toggle-icon" class="bi bi-chevron-down" style="font-size: 1.2rem;"></i>
+    </div>
+
+    <div id="footer-content">
+      <div class="p-3 border-bottom">
+        <h6><i class="bi bi-cash-stack"></i> Input Hasil Penjualan</h6>
+        <div class="input-group input-group-sm mb-2">
+          <span class="input-group-text" style="width: 60px">QRIS</span>
+          <span class="input-group-text">Rp</span>
+          <input type="text" class="form-control rekap-input" id="rekap-qris" placeholder="0" inputmode="numeric" />
+        </div>
+        <div class="input-group input-group-sm mb-2">
+          <span class="input-group-text" style="width: 60px">BCA</span>
+          <span class="input-group-text">Rp</span>
+          <input type="text" class="form-control rekap-input" id="rekap-bca" placeholder="0" inputmode="numeric" />
+        </div>
+        <div class="input-group input-group-sm">
+          <span class="input-group-text" style="width: 60px">CASH</span>
+          <span class="input-group-text">Rp</span>
+          <input type="text" class="form-control rekap-input" id="rekap-cash" placeholder="0" inputmode="numeric" />
+        </div>
+      </div>
+
+      <div class="p-3 bg-light">
+        <div class="row g-3 align-items-center">
+          <div class="col-md-8">
+            <div class="d-flex justify-content-between">
+              <span>Total (dari Tabel):</span>
+              <strong id="total-sistem">Rp NaN</strong>
+            </div>
+            <div class="d-flex justify-content-between">
+              <span>Total (dari Input):</span>
+              <strong id="total-manual">Rp 0</strong>
+            </div>
+            <div id="reconciliation-warning" class="alert alert-danger p-2 text-center small mt-2"
+              style="display: none">
+              <i class="bi bi-exclamation-triangle-fill"></i> Total tidak sesuai! Cek kembali.
+            </div>
+          </div>
+          <div class="col-md-4 d-grid">
+            <button id="kirim-laporan-btn" class="btn btn-primary btn-lg">
+              <i class="bi bi-send-fill"></i> Kirim Laporan
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>

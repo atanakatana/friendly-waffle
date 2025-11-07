@@ -1,0 +1,28 @@
+<div id="owner-data-admin-page" class="page container py-4">
+  <header class="d-flex align-items-center pb-3 mb-4 border-bottom">
+    <button class="btn btn-light me-3" onclick="showPage('owner-dashboard')">
+      <i class="bi bi-arrow-left"></i>
+    </button>
+    <h4 class="mb-0">Data Admin</h4>
+  </header>
+  <div class="d-grid mb-3">
+    <button class="btn btn-primary" onclick="openEditModal('admin')">
+      <i class="bi bi-plus-circle-fill"></i> Tambah Admin Baru
+    </button>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-striped table-hover align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>Nama Lengkap</th>
+          <th>Username</th>
+          <th>Email</th>
+          <th>Kontak</th>
+          <th>Password</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody id="admin-table-body"></tbody>
+    </table>
+  </div>
+</div>

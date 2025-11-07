@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}Dashboard Owner{% endblock %}
+
+{% block content %}
+
+<div id="owner-dashboard" class="page container py-4">
+  <header class="d-flex justify-content-between align-items-center pb-3 mb-4 border-bottom">
+    <div>
+      <h4 class="mb-0">Dashboard, <span id="owner-name">Owner</span></h4>
+      <p class="text-muted mb-0 small" id="current-date-owner"></p>
+    </div>
+    <button class="btn btn-outline-danger btn-sm" onclick="handleLogout()">
+      <i class="bi bi-box-arrow-right"></i> Logout
+    </button>
+  </header>
+  <div class="row g-4 mb-4">
+    <div class="col-lg-3 col-6">
+      <div class="card bg-success text-white shadow-sm h-100 kpi-card"
+        onclick="showPage('owner-laporan-pendapatan-page')">
+        <div class="card-body">
+          <h6 class="card-title small"><i class="bi bi-cash-coin"></i> Pendapatan (Bulan Ini)</h6>
+          <h4 id="owner-pendapatan-card">Rp 0</h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-3 col-6">
+      <div class="card bg-warning text-dark shadow-sm h-100 kpi-card" onclick="showPage('owner-pembayaran-page')">
+        <div class="card-body">
+          <h6 class="card-title small"><i class="bi bi-truck"></i> Biaya Supplier (Bulan Ini)</h6>
+          <h4 id="owner-biaya-card">Rp 0</h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-3 col-6">
+      <div class="card bg-info text-white shadow-sm h-100 kpi-card" onclick="showPage('owner-manage-reports-page')">
+        <div class="card-body">
+          <h6 class="card-title small"><i class="bi bi-person-wallet"></i> Profit Anda (Bulan Ini)</h6>
+          <h4 id="owner-profit-card">Rp 0</h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-3 col-6">
+      <div class="card bg-secondary text-white shadow-sm h-100 kpi-card"
+        onclick="showPage('owner-manage-reports-page')">
+        <div class="card-body">
+          <h6 class="card-title small"><i class="bi bi-arrow-up-right-circle-fill"></i> Disetor ke Superowner</h6>
+          <h4 id="owner-superowner-profit-card">Rp 0</h4>
+        </div>
+      </div>
+    </div>
+  </div>
+  <h5 class="mb-3">Menu Data & Pengelolaan</h5>
+  <div class="row g-3">
+    <div class="col-12">
+      <div class="card menu-card h-100 bg-primary text-white" onclick="showPage('owner-verification-center-page')">
+        <div class="card-body text-center p-3">
+          <i class="bi bi-shield-check" style="font-size: 2rem;"></i>
+          <p class="card-title mt-2 mb-0 fw-bold">Pusat Verifikasi Laporan</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card menu-card h-100" onclick="showPage('owner-data-admin-page')">
+        <div class="card-body text-center p-3">
+          <i class="bi bi-person-badge-fill text-info" style="font-size: 2rem"></i>
+          <p class="card-title mt-2 mb-0 fw-bold small">Data Admin</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card menu-card h-100" onclick="showPage('owner-data-lapak-page')">
+        <div class="card-body text-center p-3">
+          <i class="bi bi-shop text-success" style="font-size: 2rem"></i>
+          <p class="card-title mt-2 mb-0 fw-bold small">Data Lapak</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card menu-card h-100" onclick="showPage('owner-data-supplier-page')">
+        <div class="card-body text-center p-3">
+          <i class="bi bi-truck text-warning" style="font-size: 2rem"></i>
+          <p class="card-title mt-2 mb-0 fw-bold small">Data Supplier</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card menu-card h-100" onclick="showPage('owner-manage-reports-page')">
+        <div class="card-body text-center p-3">
+          <i class="bi bi-file-earmark-check-fill text-primary" style="font-size: 2rem"></i>
+          <p class="card-title mt-2 mb-0 fw-bold small">Manajemen Laporan</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card menu-card h-100" onclick="showPage('owner-pembayaran-page')">
+        <div class="card-body text-center p-3">
+          <i class="bi bi-credit-card-2-front-fill text-danger" style="font-size: 2rem"></i>
+          <p class="card-title mt-2 mb-0 fw-bold small">Pembayaran Supplier</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card menu-card h-100" onclick="showPage('owner-supplier-history-page')">
+        <div class="card-body text-center p-3">
+          <i class="bi bi-clock-history text-secondary" style="font-size: 2rem"></i>
+          <p class="card-title mt-2 mb-0 fw-bold small">Riwayat Supplier</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card menu-card h-100" onclick="showPage('owner-chart-page')">
+        <div class="card-body text-center p-3">
+          <i class="bi bi-bar-chart-line-fill text-purple" style="font-size: 2rem"></i>
+          <p class="card-title mt-2 mb-0 fw-bold small">Analisis Grafik</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/owner.js') }}"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () =>{
+    populateOwnerDashboard();
+  });
+</script>
+{% endblock %}

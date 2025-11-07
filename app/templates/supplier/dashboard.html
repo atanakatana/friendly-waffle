@@ -1,0 +1,78 @@
+<div id="supplier-dashboard" class="page container py-4">
+  <header class="d-flex justify-content-between align-items-center pb-3 mb-4 border-bottom">
+    <div>
+      <h4 class="mb-0">Dashboard, <span id="supplier-name"></span></h4>
+      <p class="text-muted mb-0 small" id="current-date-supplier"></p>
+    </div>
+    <div class="d-flex align-items-center">
+      <div class="position-relative me-3">
+        <i class="bi bi-bell-fill" style="font-size: 1.5rem; cursor: pointer;"
+          onclick="document.getElementById('monitor-stok-card').scrollIntoView({ behavior: 'smooth' });"></i>
+        <span id="notification-badge"
+          class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+          style="display: none;">
+          0
+        </span>
+      </div>
+      <button class="btn btn-outline-danger btn-sm" onclick="handleLogout()">
+        <i class="bi bi-box-arrow-right"></i> Logout
+      </button>
+    </div>
+  </header>
+  <div class="row g-3 mb-4">
+    <div class="col-md-6">
+      <div class="card bg-primary text-white shadow-sm">
+        <div class="card-body">
+          <h6 class="card-title">
+            <i class="bi bi-wallet2"></i> Total Tagihan Saat Ini
+          </h6>
+          <h4 class="display-6" id="supplier-total-tagihan">Rp 0</h4>
+          <small>Total yang belum dibayarkan oleh owner</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card text-bg-success shadow-sm">
+        <div class="card-body">
+          <h6 class="card-title">
+            <i class="bi bi-cart-check-fill"></i> Penjualan (Bulan Ini)
+          </h6>
+          <h4 class="display-6" id="supplier-penjualan-bulan-ini">
+            Rp 0
+          </h4>
+          <small>Berdasarkan laporan terkonfirmasi</small>
+        </div>
+      </div>
+    </div>
+  </div>
+  <h5 class="mb-3">Menu Laporan</h5>
+  <div class="row g-3">
+    <div class="col-12">
+      <div class="card menu-card h-100 bg-info text-white" onclick="showPage('supplier-history-page')">
+        <div class="card-body text-center p-3">
+          <i class="bi bi-file-earmark-text-fill" style="font-size: 2rem"></i>
+          <p class="card-title mt-2 mb-0 fw-bold small">
+            Riwayat Penjualan & Pembayaran
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="monitor-stok-card" class="card mt-5">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5 class="mb-0"><i class="bi bi-broadcast-pin"></i> Monitor Stok Habis</h5>
+      <button class="btn btn-sm btn-outline-info me-2" onclick="showPage('supplier-notification-history-page')">
+        <i class="bi bi-archive"></i> Lihat Arsip
+      </button>
+      <button class="btn btn-sm btn-outline-secondary" onclick="populateSupplierDashboard()">
+        <i class="bi bi-arrow-clockwise"></i> Refresh
+      </button>
+    </div>
+    <div id="notification-list-container" class="list-group list-group-flush">
+      <div id="notification-loading" class="list-group-item text-center p-4">
+        <div class="spinner-border spinner-border-sm"></div>
+        <p class="mb-0 mt-2 text-muted">Memuat notifikasi...</p>
+      </div>
+    </div>
+  </div>
+</div>

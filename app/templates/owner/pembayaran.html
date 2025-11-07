@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% block title %}Analisis Grafik Pendapatan & Biaya{% endblock %}
+
+{% block content %}
+
+<div id="owner-pembayaran-page" class="page container py-4">
+  <header class="d-flex align-items-center pb-3 mb-4 border-bottom">
+    <button class="btn btn-light me-3" onclick="showPage('owner-dashboard')"><i class="bi bi-arrow-left"></i></button>
+    <h4 class="mb-0">Pembayaran Tagihan Supplier</h4>
+  </header>
+
+  <div id="pembayaran-content-loading" class="text-center p-5">
+    <div class="spinner-border text-primary"></div>
+    <p class="mt-2 text-muted">Memuat data pembayaran...</p>
+  </div>
+
+  <div id="pembayaran-content-main" style="display: none;">
+    <ul class="nav nav-tabs nav-fill mb-3" id="paymentTabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="tagihan-tab" data-bs-toggle="tab" data-bs-target="#tagihan-tab-pane"
+          type="button" role="tab">
+          <i class="bi bi-wallet2 me-2"></i>Tagihan Saat Ini
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="riwayat-tab" data-bs-toggle="tab" data-bs-target="#riwayat-tab-pane" type="button"
+          role="tab">
+          <i class="bi bi-clock-history me-2"></i>Riwayat Pembayaran
+        </button>
+      </li>
+    </ul>
+
+    <div class="tab-content" id="paymentTabsContent">
+
+      <div class="tab-pane fade show active" id="tagihan-tab-pane" role="tabpanel" aria-labelledby="tagihan-tab">
+        <div class="row g-3 my-2 align-items-end">
+          <div class="col-md-4">
+            <label for="tagihan-metode-filter" class="form-label small">Filter Metode Pembayaran</label>
+            <select id="tagihan-metode-filter" class="form-select form-select-sm">
+              <option value="semua">Semua Metode</option>
+              <option value="BCA">BCA</option>
+              <option value="DANA">DANA</option>
+            </select>
+          </div>
+        </div>
+        <h5 class="mb-3 mt-3">Daftar Tagihan Supplier</h5>
+        <div class="table-responsive">
+          <table class="table table-striped table-hover align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>Nama Supplier</th>
+                <th>Total Tagihan</th>
+                <th>Status</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="pembayaran-table-body">
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="tab-pane fade" id="riwayat-tab-pane" role="tabpanel" aria-labelledby="riwayat-tab">
+        <h5 class="mb-3 mt-3">Riwayat Pembayaran</h5>
+
+        <div class="p-3 bg-light border rounded mb-4">
+          <div class="row g-3 align-items-end">
+            <div class="col-md-3">
+              <label for="payment-history-method" class="form-label">Metode</label>
+              <select id="payment-history-method" class="form-select">
+                <option value="semua">Semua</option>
+                <option value="BCA">BCA</option>
+                <option value="DANA">DANA</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Navigasi Riwayat Harian</label>
+              <div class="btn-group w-100">
+                <button class="btn btn-outline-secondary" type="button" id="payment-history-prev-day"><i
+                    class="bi bi-chevron-left"></i></button>
+                <input type="date" id="payment-history-daily-date" class="form-control text-center"
+                  style="min-width: 150px;">
+                <button class="btn btn-outline-secondary" type="button" id="payment-history-next-day"><i
+                    class="bi bi-chevron-right"></i></button>
+              </div>
+            </div>
+            <div class="col-md-3 d-grid">
+              <button class="btn btn-outline-info" data-bs-toggle="collapse" data-bs-target="#advanced-payment-filter">
+                <i class="bi bi-sliders"></i> Filter Canggih
+              </button>
+            </div>
+          </div>
+          <div class="collapse mt-3" id="advanced-payment-filter">
+            <div class="row g-3 align-items-end p-3 border rounded bg-white">
+              <div class="col-md-5">
+                <label for="payment-history-start-date" class="form-label">Tanggal Mulai</label>
+                <input type="date" id="payment-history-start-date" class="form-control">
+              </div>
+              <div class="col-md-5">
+                <label for="payment-history-end-date" class="form-label">Tanggal Akhir</label>
+                <input type="date" id="payment-history-end-date" class="form-control">
+              </div>
+              <div class="col-md-2 d-grid">
+                <button id="payment-history-filter-btn" class="btn btn-primary">
+                  <i class="bi bi-funnel-fill"></i> Terapkan
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="payment-history-loading" class="text-center p-4" style="display: none;">
+          <div class="spinner-border spinner-border-sm"></div>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm table-bordered">
+            <thead class="table-light">
+              <tr>
+                <th>Tanggal</th>
+                <th>Supplier</th>
+                <th>Jumlah</th>
+                <th>Metode</th>
+                <th>Keterangan</th>
+              </tr>
+            </thead>
+            <tbody id="payment-history-table-body">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/owner.js') }}"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    populatePembayaranPage();
+  });
+</script>
+{% endblock %}

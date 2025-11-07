@@ -1,0 +1,75 @@
+<div id="lapak-dashboard" class="page container py-4">
+  <header class="d-flex justify-content-between align-items-center pb-3 mb-4 border-bottom">
+    <div>
+      <h4 class="mb-0">Laporan Harian, <span id="lapak-name"></span>!</h4>
+      <p class="text-muted mb-0 small" id="current-date-lapak"></p>
+    </div>
+    <button class="btn btn-outline-danger" onclick="handleLogout()">
+      <i class="bi bi-box-arrow-right"></i> Logout
+    </button>
+  </header>
+
+  <div id="laporan-loading" class="text-center p-5">
+    <div class="spinner-border text-primary"></div>
+    <p class="mt-2 text-muted">Memuat data...</p>
+  </div>
+  <div id="laporan-exists" class="alert alert-warning text-center" style="display: none">
+    Laporan untuk hari ini sudah dibuat. Silakan lihat di menu History.
+  </div>
+
+  <div id="laporan-content" style="display: none">
+    <div class="row g-3 mb-4">
+      <div class="col-6">
+        <div class="card menu-card h-100" onclick="openAturProdukModal()">
+          <div class="card-body text-center p-3">
+            <i class="bi bi-ui-checks-grid text-primary" style="font-size: 2rem"></i>
+            <p class="card-title mt-2 mb-0 fw-bold small">Atur Produk</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-6">
+        <div class="card menu-card h-100" onclick="showPage('history-laporan-page')">
+          <div class="card-body text-center p-3">
+            <i class="bi bi-clock-history text-secondary" style="font-size: 2rem"></i>
+            <p class="card-title mt-2 mb-0 fw-bold small">History Laporan</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="product-search-container" class="mb-3" style="display: none;">
+      <input type="text" id="main-report-search-input" class="form-control"
+        placeholder="Cari produk atau supplier di tabel...">
+    </div>
+
+    <div id="report-tables-container">
+      <div id="initial-prompt" class="text-center text-muted p-5 border rounded">
+        <i class="bi bi-ui-checks-grid" style="font-size: 3rem;"></i>
+        <h5 class="mt-3">Mulai Laporan Harian</h5>
+        <p>Klik "Atur Produk" di atas untuk memilih produk yang akan dijual hari ini.</p>
+      </div>
+    </div>
+    <div id="report-summary-container" class="mt-4" style="display: none;">
+      <div id="summary-placeholder" class="text-center text-muted p-5 border rounded" style="display: none;">
+        <div class="spinner-border spinner-border-sm text-secondary"></div>
+        <p class="mt-2 mb-0">Menghitung total...</p>
+      </div>
+      <div id="summary-content" class="card" style="display: none;">
+        <div class="card-header fw-bold">Ringkasan Laporan</div>
+        <div class="card-body">
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item d-flex justify-content-between align-items-center">Total Produk Terjual:<span
+                id="summary-total-terjual" class="badge bg-primary rounded-pill">0 Pcs</span></li>
+            <li class="list-group-item d-flex justify-content-between align-items-center">Total Pendapatan:<strong
+                id="summary-total-pendapatan">Rp 0</strong></li>
+            <li class="list-group-item d-flex justify-content-between align-items-center">Total Biaya:<strong
+                id="summary-total-biaya">Rp 0</strong></li>
+            <li class="list-group-item d-flex justify-content-between align-items-center fw-bold">Total
+              Keuntungan:<strong id="summary-total-keuntungan" class="text-success">Rp 0</strong></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
