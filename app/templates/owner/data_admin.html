@@ -1,3 +1,9 @@
+{% extends "owner/base.html" %}
+
+{% block title %}Data Admin{% endblock %}
+
+{% block content %}
+
 <div id="owner-data-admin-page" class="page container py-4">
   <header class="d-flex align-items-center pb-3 mb-4 border-bottom">
     <button class="btn btn-light me-3" onclick="showPage('owner-dashboard')">
@@ -26,3 +32,13 @@
     </table>
   </div>
 </div>
+
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/owner.js') }}"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    loadAdminData();
+  });
+</script>
+{% endblock %}
