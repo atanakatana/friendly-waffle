@@ -993,4 +993,16 @@ async function handlePaymentSubmit(e) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  
+  document
+      .getElementById("edit-admin-form")
+      .addEventListener("submit", (e) => handleFormSubmit("admin", e));
+    document
+      .getElementById("edit-lapak-form")
+      .addEventListener("submit", (e) => handleFormSubmit("lapak", e));
+    document
+      .getElementById("edit-supplier-form")
+      .addEventListener("submit", (e) => handleFormSubmit("supplier", e));
+    document
+      .getElementById("payment-confirmation-form")
+      .addEventListener("submit", handlePaymentSubmit);
+    
