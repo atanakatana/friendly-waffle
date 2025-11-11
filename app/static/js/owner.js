@@ -1,5 +1,24 @@
+function changeReportDate(dayDelta) {
+  const dateEl = document.getElementById('manage-reports-daily-date');
+  const newDate = new Date(dateEl.value);
+  newDate.setDate(newDate.getDate() + dayDelta);
+  dateEl.value = newDate.toISOString().split('T')[0];
+  // Otomatis tutup filter canggih & refresh
+  bootstrap.Collapse.getOrCreateInstance('#advanced-reports-filter').hide();
+  populateManageReportsPage();
+}
+
+function changePaymentDate(dayDelta) {
+  const dateEl = document.getElementById('payment-history-daily-date');
+  const newDate = new Date(dateEl.value);
+  newDate.setDate(newDate.getDate() + dayDelta);
+  dateEl.value = newDate.toISOString().split('T')[0];
+  // Otomatis tutup filter canggih & refresh
+  bootstrap.Collapse.getOrCreateInstance('#advanced-payment-filter').hide();
+  populatePaymentHistory();
+}
+
 async function populateChartPage() {
-  // Fungsi ini hanya berjalan sekali saat halaman dibuka untuk mengisi filter
   const monthSelect = document.getElementById('chart-month-select');
   const yearSelect = document.getElementById('chart-year-select');
   const currentMonth = new Date().getMonth() + 1;
@@ -166,7 +185,6 @@ async function fetchAndDisplayOwnerSupplierHistory() {
   }
 }
 
-// GANTI FUNGSI LAMA DENGAN VERSI BARU INI
 async function populateOwnerDashboard() {
   try {
     // PERBAIKAN DI SINI: Kirim ID Owner yang sedang login
@@ -973,3 +991,6 @@ async function handlePaymentSubmit(e) {
     await populateOwnerDashboard();
   }
 }
+
+document.addEventListener("DOMContentLoaded", () => {
+  

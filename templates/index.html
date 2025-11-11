@@ -1,442 +1,282 @@
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+  const { jsPDF } = window.jspdf;
+  // --- GLOBAL STATE & MODAL INSTANCES ---
+
+  // --- HELPER & CORE FUNCTIONS ---
 
 
-  
-
-  
-
-  
-
-  
-
-  
-
-  
-
-
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
-  <script>
-    const { jsPDF } = window.jspdf;
-    // --- GLOBAL STATE & MODAL INSTANCES ---
-    let AppState = {
-      currentUser: null,
-      ownerData: {},
-      // Ganti 'catatanData' dan 'lapakSuppliers' dengan 'masterData' yang lebih komprehensif
-      masterData: {
-        suppliers: [],
-        products: []
-      },
-    };
-    let pendapatanChartInstance = null;
-    let biayaChartInstance = null;
-    let modals = {};
-
-    // --- HELPER & CORE FUNCTIONS ---
-    
-
-    // --- LOGIN, ROUTING & PAGE MANAGEMENT ---
-    async function showPage(pageId) {
-      document
-        .querySelectorAll(".page")
-        .forEach((e) => (e.style.display = "none"));
-      const activePage = document.getElementById(pageId);
-      if (activePage) {
-        activePage.style.display = "block";
-        if (pageId === "login-page") activePage.style.display = "flex";
-        document.getElementById("rekap-footer").style.display =
-          pageId === "lapak-dashboard" &&
-            AppState.currentUser?.role === "lapak"
-            ? "block"
-            : "none";
-        const { role } = AppState.currentUser || {};
-        if (role === "owner") {
-          if (pageId === "owner-dashboard") await populateOwnerDashboard();
-          if (pageId.startsWith("owner-laporan")) {
-            const dpPendapatan = document.getElementById("laporan-pendapatan-datepicker");
-            if (dpPendapatan) dpPendapatan.dispatchEvent(new Event("change"));
-            const dpBiaya = document.getElementById("laporan-biaya-datepicker");
-            if (dpBiaya) dpBiaya.dispatchEvent(new Event("change"));
-          }
-          // (Cari baris 'if (pageId === "owner-manage-reports-page")' sekitar baris 1500)
-          if (pageId === "owner-manage-reports-page") {
-            const todayISO = new Date().toISOString().split("T")[0];
-            document.getElementById('manage-reports-daily-date').value = todayISO;
-            // Kosongkan filter canggih
-            document.getElementById('manage-reports-start-date').value = '';
-            document.getElementById('manage-reports-end-date').value = '';
-            await populateManageReportsPage();
-          }
-          // (Cari baris 'if (pageId === "owner-pembayaran-page")' sekitar baris 1502)
-          if (pageId === "owner-pembayaran-page") {
-            const todayISO = new Date().toISOString().split("T")[0];
-            document.getElementById('payment-history-daily-date').value = todayISO;
-            // Kosongkan filter canggih
-            document.getElementById('payment-history-start-date').value = '';
-            document.getElementById('payment-history-end-date').value = '';
-            await populatePembayaranPage();
-          }
-          if (pageId === "owner-supplier-history-page") await populateOwnerSupplierHistoryPage(); // <-- Tambahan
-          if (pageId === "owner-chart-page") await populateChartPage();
-          if (pageId === "owner-verification-center-page") await populateVerificationCenter();
-        } else if (role === "lapak") {
-          if (pageId === "lapak-dashboard") await populateLapakDashboard();
-          if (pageId === "history-laporan-page")
-            await populateHistoryLaporanPage();
-        } else if (role === "supplier") {
-          if (pageId === "supplier-dashboard")
-            await populateSupplierDashboard();
-          if (pageId === "supplier-history-page")
-            await populateSupplierHistoryPage();
-          if (pageId === "supplier-notification-history-page") await populateArchivedNotifications();
-          // (Sekitar baris 1526 di index.html)
-        } else if (role === "superowner") {
-          // PERUBAHAN DI SINI
-          if (pageId === "superowner-dashboard") await populateSuperownerDashboard();
-          if (pageId === "superowner-profit-detail-page") await populateSuperownerProfitDetails();
-          if (pageId === "superowner-manage-reports-page") await populateSuperownerReports();
-
-          // === PERUBAHAN LOGIKA HALAMAN RIWAYAT ===
-          if (pageId === "superowner-transactions-page") {
-            const todayISO = new Date().toISOString().split("T")[0];
-            document.getElementById('so-tx-daily-date').value = todayISO;
-            document.getElementById('so-tx-start-date').value = '';
-            document.getElementById('so-tx-end-date').value = '';
-            await populateSuperownerTransactions();
-          }
-          // === AKHIR PERUBAHAN ===
-
-          if (pageId === "superowner-manage-owners-page") await populateSuperownerManageOwners();
-        }
-      }
-    }
-    async function handleLogin(e) {
-      e.preventDefault();
-      const username = document.getElementById("username").value.trim(),
-        password = document.getElementById("password").value;
-      try {
-        const response = await fetch("/api/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ username, password }),
-        });
-        const result = await response.json();
-        if (response.ok && result.success) {
-          localStorage.setItem("userSession", JSON.stringify(result));
-          AppState.currentUser = result;
-          await routeUser(result.role);
-        } else {
-          showToast(result.message || "Login Gagal", false);
-        }
-      } catch (e) {
-        showToast("Terjadi kesalahan koneksi.", false);
-      }
-    }
-    async function handleAuthRouting() {
-      const session = localStorage.getItem("userSession");
-      if (session) {
-        AppState.currentUser = JSON.parse(session);
-        await routeUser(AppState.currentUser.role);
-      } else {
-        showLoginPage();
-      }
-    }
-    function showLoginPage() {
-      document
-        .querySelectorAll("main")
-        .forEach((main) => (main.style.display = "none"));
-      showPage("login-page");
-    }
-    async function routeUser(role) {
-      document
-        .querySelectorAll("main")
-        .forEach((main) => (main.style.display = "none"));
+  // --- LOGIN, ROUTING & PAGE MANAGEMENT ---
+  async function showPage(pageId) {
+    document
+      .querySelectorAll(".page")
+      .forEach((e) => (e.style.display = "none"));
+    const activePage = document.getElementById(pageId);
+    if (activePage) {
+      activePage.style.display = "block";
+      if (pageId === "login-page") activePage.style.display = "flex";
+      document.getElementById("rekap-footer").style.display =
+        pageId === "lapak-dashboard" &&
+          AppState.currentUser?.role === "lapak"
+          ? "block"
+          : "none";
+      const { role } = AppState.currentUser || {};
       if (role === "owner") {
-        document.getElementById("owner-pages").style.display = "block";
-        showPage("owner-dashboard");
-        document.getElementById("owner-name").textContent =
-          AppState.currentUser.user_info.nama_lengkap;
-      } else if (role === "lapak") {
-        document.getElementById("lapak-pages").style.display = "block";
-        document.getElementById("lapak-name").textContent =
-          AppState.currentUser.user_info.nama_lengkap;
-        showPage("lapak-dashboard");
-      } else if (role === "supplier") {
-        document.getElementById("supplier-pages").style.display = "block";
-        showPage("supplier-dashboard");
-        document.getElementById("supplier-name").textContent =
-          AppState.currentUser.user_info.nama_supplier;
-      } else if (role === "superowner") {
-        document.getElementById("superowner-pages").style.display = "block";
-        showPage("superowner-dashboard");
-        // Update tanggal untuk dashboard baru
-        if (document.getElementById("current-date-superowner")) {
-          document.getElementById("current-date-superowner").textContent = new Date().toLocaleDateString("id-ID", {
-            weekday: "long", year: "numeric", month: "long", day: "numeric",
-          });
+        if (pageId === "owner-dashboard") await populateOwnerDashboard();
+        if (pageId.startsWith("owner-laporan")) {
+          const dpPendapatan = document.getElementById("laporan-pendapatan-datepicker");
+          if (dpPendapatan) dpPendapatan.dispatchEvent(new Event("change"));
+          const dpBiaya = document.getElementById("laporan-biaya-datepicker");
+          if (dpBiaya) dpBiaya.dispatchEvent(new Event("change"));
         }
+        // (Cari baris 'if (pageId === "owner-manage-reports-page")' sekitar baris 1500)
+        if (pageId === "owner-manage-reports-page") {
+          const todayISO = new Date().toISOString().split("T")[0];
+          document.getElementById('manage-reports-daily-date').value = todayISO;
+          // Kosongkan filter canggih
+          document.getElementById('manage-reports-start-date').value = '';
+          document.getElementById('manage-reports-end-date').value = '';
+          await populateManageReportsPage();
+        }
+        // (Cari baris 'if (pageId === "owner-pembayaran-page")' sekitar baris 1502)
+        if (pageId === "owner-pembayaran-page") {
+          const todayISO = new Date().toISOString().split("T")[0];
+          document.getElementById('payment-history-daily-date').value = todayISO;
+          // Kosongkan filter canggih
+          document.getElementById('payment-history-start-date').value = '';
+          document.getElementById('payment-history-end-date').value = '';
+          await populatePembayaranPage();
+        }
+        if (pageId === "owner-supplier-history-page") await populateOwnerSupplierHistoryPage(); // <-- Tambahan
+        if (pageId === "owner-chart-page") await populateChartPage();
+        if (pageId === "owner-verification-center-page") await populateVerificationCenter();
+      } else if (role === "lapak") {
+        if (pageId === "lapak-dashboard") await populateLapakDashboard();
+        if (pageId === "history-laporan-page")
+          await populateHistoryLaporanPage();
+      } else if (role === "supplier") {
+        if (pageId === "supplier-dashboard")
+          await populateSupplierDashboard();
+        if (pageId === "supplier-history-page")
+          await populateSupplierHistoryPage();
+        if (pageId === "supplier-notification-history-page") await populateArchivedNotifications();
+        // (Sekitar baris 1526 di index.html)
+      } else if (role === "superowner") {
+        // PERUBAHAN DI SINI
+        if (pageId === "superowner-dashboard") await populateSuperownerDashboard();
+        if (pageId === "superowner-profit-detail-page") await populateSuperownerProfitDetails();
+        if (pageId === "superowner-manage-reports-page") await populateSuperownerReports();
 
-      } else {
-        showLoginPage();
+        // === PERUBAHAN LOGIKA HALAMAN RIWAYAT ===
+        if (pageId === "superowner-transactions-page") {
+          const todayISO = new Date().toISOString().split("T")[0];
+          document.getElementById('so-tx-daily-date').value = todayISO;
+          document.getElementById('so-tx-start-date').value = '';
+          document.getElementById('so-tx-end-date').value = '';
+          await populateSuperownerTransactions();
+        }
+        // === AKHIR PERUBAHAN ===
+
+        if (pageId === "superowner-manage-owners-page") await populateSuperownerManageOwners();
       }
     }
-    function handleLogout() {
-      // Bersihkan juga saat logout
-      if (AppState.currentUser && AppState.currentUser.role === 'lapak') {
-        const storageKey = `reportState_${AppState.currentUser.user_info.lapak_id}`;
-        localStorage.removeItem(storageKey);
-      }
-      localStorage.removeItem("userSession");
-      AppState.currentUser = null;
-      window.location.reload();
-    }
-    // (Letakkan ini di dalam tag <script>)
+  }
 
-    // FUNGSI HELPER BARU 1: Untuk navigasi harian Laporan
-    function changeReportDate(dayDelta) {
-      const dateEl = document.getElementById('manage-reports-daily-date');
-      const newDate = new Date(dateEl.value);
-      newDate.setDate(newDate.getDate() + dayDelta);
-      dateEl.value = newDate.toISOString().split('T')[0];
-      // Otomatis tutup filter canggih & refresh
+  // (Letakkan ini di dalam tag <script>)
+
+  
+
+  // (Letakkan ini di dalam tag <script>)
+
+  // FUNGSI HELPER BARU: Untuk navigasi harian SO Transactions
+  function changeSuperownerTxDate(dayDelta) {
+    const dateEl = document.getElementById('so-tx-daily-date');
+    const newDate = new Date(dateEl.value);
+    newDate.setDate(newDate.getDate() + dayDelta);
+    dateEl.value = newDate.toISOString().split('T')[0];
+    // Otomatis tutup filter canggih & refresh
+    bootstrap.Collapse.getOrCreateInstance('#so-advanced-tx-filter').hide();
+    populateSuperownerTransactions();
+  }
+
+
+
+
+
+
+
+  // (Letakkan ini setelah semua fungsi Supplier)
+
+
+
+  // --- APP INITIALIZATION ---
+  document.addEventListener("DOMContentLoaded", () => {
+    
+    const rekapCollapseEl = document.getElementById('rekap-manual-collapse');
+    if (rekapCollapseEl) {
+      const rekapText = document.getElementById('toggle-rekap-text');
+      const rekapIcon = document.getElementById('toggle-rekap-icon');
+
+      // Saat akan ditampilkan (show)
+      rekapCollapseEl.addEventListener('show.bs.collapse', event => {
+        rekapText.textContent = 'Sembunyikan Input';
+        rekapIcon.classList.remove('bi-chevron-up');
+        rekapIcon.classList.add('bi-chevron-down');
+      });
+
+      // Saat akan disembunyikan (hide)
+      rekapCollapseEl.addEventListener('hide.bs.collapse', event => {
+        rekapText.textContent = 'Input Hasil Penjualan';
+        rekapIcon.classList.remove('bi-chevron-down');
+        rekapIcon.classList.add('bi-chevron-up');
+      });
+    }
+    const todayISO = new Date().toISOString().split("T")[0];
+    ["laporan-pendapatan-datepicker", "laporan-biaya-datepicker"].forEach(
+      (id) => {
+        const el = document.getElementById(id);
+        if (el) el.value = todayISO;
+      }
+    );
+    document
+      .getElementById("login-form")
+      .addEventListener("submit", handleLogin);
+    
+    // ... (setelah listener handlePaymentSubmit)
+    // TAMBAHAN: Event listener untuk form tambah produk di modal
+    document
+      .getElementById("add-product-to-supplier-form")
+      .addEventListener("submit", handleAddNewProduct);
+
+    // PERUBAHAN 8: Tambahkan event listener untuk form manual
+
+
+    const lpd = document.getElementById("laporan-pendapatan-datepicker");
+    if (lpd) lpd.addEventListener("change", populateLaporanPendapatan);
+    const lbd = document.getElementById("laporan-biaya-datepicker");
+    if (lbd) lbd.addEventListener("change", populateLaporanBiaya);
+    document
+      .getElementById("kirim-laporan-btn")
+      .addEventListener("click", handleKirimLaporan);
+    // Pasang event listener untuk input footer DI SINI
+    document.querySelectorAll(".rekap-input").forEach(input => {
+      input.addEventListener("input", formatNumberInput); // Untuk format angka
+      input.addEventListener("keyup", updateSummarySection); // Untuk kalkulasi ulang
+    });
+    document.getElementById("superowner-edit-owner-form").addEventListener("submit", handleSuperownerOwnerFormSubmit);
+    const filterBtn = document.getElementById('supplier-history-filter-btn');
+    if (filterBtn) {
+      filterBtn.addEventListener('click', populateSupplierHistoryPage);
+    }
+    const manageReportsFilterBtn = document.getElementById('manage-reports-filter-btn');
+    if (manageReportsFilterBtn) {
+      manageReportsFilterBtn.addEventListener('click', populateManageReportsPage);
+    }
+
+    const paymentHistoryFilterBtn = document.getElementById('payment-history-filter-btn');
+    if (paymentHistoryFilterBtn) {
+      paymentHistoryFilterBtn.addEventListener('click', populatePaymentHistory);
+    }
+
+    // (Letakkan ini di dalam 'DOMContentLoaded', setelah listener 'paymentHistoryFilterBtn')
+    // (Sekitar baris 2514 di index.html)
+    // Listener untuk filter status baru
+    document.getElementById('manage-reports-status-filter').addEventListener('change', populateManageReportsPage);
+
+    // Listener untuk filter harian MANAJEMEN LAPORAN
+    document.getElementById('manage-reports-daily-date').addEventListener('change', () => {
       bootstrap.Collapse.getOrCreateInstance('#advanced-reports-filter').hide();
       populateManageReportsPage();
-    }
+    });
+    document.getElementById('manage-reports-prev-day').addEventListener('click', () => changeReportDate(-1));
+    document.getElementById('manage-reports-next-day').addEventListener('click', () => changeReportDate(1));
 
-    // FUNGSI HELPER BARU 2: Untuk navigasi harian Pembayaran
-    function changePaymentDate(dayDelta) {
-      const dateEl = document.getElementById('payment-history-daily-date');
-      const newDate = new Date(dateEl.value);
-      newDate.setDate(newDate.getDate() + dayDelta);
-      dateEl.value = newDate.toISOString().split('T')[0];
-      // Otomatis tutup filter canggih & refresh
+    // (Letakkan ini di dalam 'DOMContentLoaded', setelah listener 'manage-reports-next-day')
+
+    // Listener untuk filter harian RIWAYAT PEMBAYARAN
+    document.getElementById('payment-history-daily-date').addEventListener('change', () => {
       bootstrap.Collapse.getOrCreateInstance('#advanced-payment-filter').hide();
       populatePaymentHistory();
+    });
+    document.getElementById('payment-history-prev-day').addEventListener('click', () => changePaymentDate(-1));
+    document.getElementById('payment-history-next-day').addEventListener('click', () => changePaymentDate(1));
+    // Listener untuk select metode (karena sekarang di luar)
+    document.getElementById('payment-history-method').addEventListener('change', () => {
+      // Jika filter harian aktif, refresh. Jika filter canggih, jangan lakukan apa-apa (tunggu tombol apply)
+      const isAdvanced = document.getElementById('advanced-payment-filter').classList.contains('show');
+      if (!isAdvanced) {
+        populatePaymentHistory();
+      }
+    });
+
+    // (Letakkan ini di dalam 'DOMContentLoaded', setelah listener 'payment-history-method')
+
+    // Listener untuk filter baru di tab "Tagihan Saat Ini"
+    document.getElementById('tagihan-metode-filter').addEventListener('change', populatePembayaranPage);
+
+    // (Sekitar baris 2531 di index.html)
+    // Listener untuk filter di halaman SO Manage Reports
+    const soReportFilterBtn = document.getElementById('so-report-filter-btn');
+    if (soReportFilterBtn) {
+      soReportFilterBtn.addEventListener('click', populateSuperownerReports);
     }
+    // (Sekitar baris 2538 di index.html)
 
-    // (Letakkan ini di dalam tag <script>)
-
-    // FUNGSI HELPER BARU: Untuk navigasi harian SO Transactions
-    function changeSuperownerTxDate(dayDelta) {
-      const dateEl = document.getElementById('so-tx-daily-date');
-      const newDate = new Date(dateEl.value);
-      newDate.setDate(newDate.getDate() + dayDelta);
-      dateEl.value = newDate.toISOString().split('T')[0];
-      // Otomatis tutup filter canggih & refresh
+    // Listener untuk halaman baru SO Transactions
+    const soTxDailyDate = document.getElementById('so-tx-daily-date');
+    if (soTxDailyDate) soTxDailyDate.addEventListener('change', () => {
       bootstrap.Collapse.getOrCreateInstance('#so-advanced-tx-filter').hide();
       populateSuperownerTransactions();
+    });
+
+    const soTxPrevDay = document.getElementById('so-tx-prev-day');
+    if (soTxPrevDay) soTxPrevDay.addEventListener('click', () => changeSuperownerTxDate(-1));
+
+    const soTxNextDay = document.getElementById('so-tx-next-day');
+    if (soTxNextDay) soTxNextDay.addEventListener('click', () => changeSuperownerTxDate(1));
+
+    const soTxFilterBtn = document.getElementById('so-tx-filter-btn');
+    if (soTxFilterBtn) soTxFilterBtn.addEventListener('click', populateSuperownerTransactions);
+    const ownerSupplierSelect = document.getElementById('owner-supplier-select');
+    if (ownerSupplierSelect) {
+      // Listener ini memastikan data tampil saat supplier DIPILIH
+      ownerSupplierSelect.addEventListener('change', fetchAndDisplayOwnerSupplierHistory);
     }
+    const chartFilterBtn = document.getElementById('chart-filter-btn');
+    if (chartFilterBtn) {
+      chartFilterBtn.addEventListener('click', fetchAndDrawCharts);
+    }
+    const ownerHistoryFilterBtn = document.getElementById('owner-history-filter-btn');
+    if (ownerHistoryFilterBtn) {
+      // Listener ini memastikan data ter-filter saat tombol DIKLIK
+      ownerHistoryFilterBtn.addEventListener('click', fetchAndDisplayOwnerSupplierHistory);
+    }
+    /*const searchInput = document.getElementById('product-search-input');
+    if (searchInput) {
+        searchInput.addEventListener('input', filterReportTables);
+    }*/
+    manageFooterVisibility();
+    handleAuthRouting();
+    updateDate();
+  });
+  // Fungsi untuk memfilter baris tabel berdasarkan input pencarian
+  document.addEventListener('DOMContentLoaded', function () {
+    const searchInput = document.getElementById('main-report-search-input');
+    if (!searchInput) return;
 
-    
+    searchInput.addEventListener('input', function () {
+      const filter = this.value.toLowerCase();
+      const tables = document.querySelectorAll('#report-tables-container table tbody');
 
-    
-
-    
-
-    // (Letakkan ini setelah semua fungsi Supplier)
-
-    
-
-    // --- APP INITIALIZATION ---
-    document.addEventListener("DOMContentLoaded", () => {
-      modals.admin = new bootstrap.Modal(
-        document.getElementById("edit-admin-modal")
-      );
-      modals.lapak = new bootstrap.Modal(
-        document.getElementById("edit-lapak-modal")
-      );
-      modals.supplier = new bootstrap.Modal(
-        document.getElementById("edit-supplier-modal")
-      );
-      modals.payment = new bootstrap.Modal(
-        document.getElementById("payment-confirmation-modal")
-      );
-      modals.reportDetail = new bootstrap.Modal(
-        document.getElementById("report-detail-modal")
-      );
-      // PERUBAHAN 7: Inisialisasi modal baru
-
-      modals.aturProduk = new bootstrap.Modal(
-        document.getElementById("atur-produk-modal")
-      );
-      modals.withdraw = new bootstrap.Modal(document.getElementById("superowner-withdraw-modal")
-      );
-      modals.superownerEditOwner = new bootstrap.Modal(document.getElementById("superowner-edit-owner-modal")
-      );
-      const rekapCollapseEl = document.getElementById('rekap-manual-collapse');
-      if (rekapCollapseEl) {
-        const rekapText = document.getElementById('toggle-rekap-text');
-        const rekapIcon = document.getElementById('toggle-rekap-icon');
-
-        // Saat akan ditampilkan (show)
-        rekapCollapseEl.addEventListener('show.bs.collapse', event => {
-          rekapText.textContent = 'Sembunyikan Input';
-          rekapIcon.classList.remove('bi-chevron-up');
-          rekapIcon.classList.add('bi-chevron-down');
-        });
-
-        // Saat akan disembunyikan (hide)
-        rekapCollapseEl.addEventListener('hide.bs.collapse', event => {
-          rekapText.textContent = 'Input Hasil Penjualan';
-          rekapIcon.classList.remove('bi-chevron-down');
-          rekapIcon.classList.add('bi-chevron-up');
-        });
-      }
-      const todayISO = new Date().toISOString().split("T")[0];
-      ["laporan-pendapatan-datepicker", "laporan-biaya-datepicker"].forEach(
-        (id) => {
-          const el = document.getElementById(id);
-          if (el) el.value = todayISO;
-        }
-      );
-      document
-        .getElementById("login-form")
-        .addEventListener("submit", handleLogin);
-      document
-        .getElementById("edit-admin-form")
-        .addEventListener("submit", (e) => handleFormSubmit("admin", e));
-      document
-        .getElementById("edit-lapak-form")
-        .addEventListener("submit", (e) => handleFormSubmit("lapak", e));
-      document
-        .getElementById("edit-supplier-form")
-        .addEventListener("submit", (e) => handleFormSubmit("supplier", e));
-      document
-        .getElementById("payment-confirmation-form")
-        .addEventListener("submit", handlePaymentSubmit);
-      // ... (setelah listener handlePaymentSubmit)
-      // TAMBAHAN: Event listener untuk form tambah produk di modal
-      document
-        .getElementById("add-product-to-supplier-form")
-        .addEventListener("submit", handleAddNewProduct);
-
-      // PERUBAHAN 8: Tambahkan event listener untuk form manual
-
-
-      const lpd = document.getElementById("laporan-pendapatan-datepicker");
-      if (lpd) lpd.addEventListener("change", populateLaporanPendapatan);
-      const lbd = document.getElementById("laporan-biaya-datepicker");
-      if (lbd) lbd.addEventListener("change", populateLaporanBiaya);
-      document
-        .getElementById("kirim-laporan-btn")
-        .addEventListener("click", handleKirimLaporan);
-      // Pasang event listener untuk input footer DI SINI
-      document.querySelectorAll(".rekap-input").forEach(input => {
-        input.addEventListener("input", formatNumberInput); // Untuk format angka
-        input.addEventListener("keyup", updateSummarySection); // Untuk kalkulasi ulang
-      });
-      document.getElementById("superowner-edit-owner-form").addEventListener("submit", handleSuperownerOwnerFormSubmit);
-      const filterBtn = document.getElementById('supplier-history-filter-btn');
-      if (filterBtn) {
-        filterBtn.addEventListener('click', populateSupplierHistoryPage);
-      }
-      const manageReportsFilterBtn = document.getElementById('manage-reports-filter-btn');
-      if (manageReportsFilterBtn) {
-        manageReportsFilterBtn.addEventListener('click', populateManageReportsPage);
-      }
-
-      const paymentHistoryFilterBtn = document.getElementById('payment-history-filter-btn');
-      if (paymentHistoryFilterBtn) {
-        paymentHistoryFilterBtn.addEventListener('click', populatePaymentHistory);
-      }
-
-      // (Letakkan ini di dalam 'DOMContentLoaded', setelah listener 'paymentHistoryFilterBtn')
-      // (Sekitar baris 2514 di index.html)
-      // Listener untuk filter status baru
-      document.getElementById('manage-reports-status-filter').addEventListener('change', populateManageReportsPage);
-
-      // Listener untuk filter harian MANAJEMEN LAPORAN
-      document.getElementById('manage-reports-daily-date').addEventListener('change', () => {
-        bootstrap.Collapse.getOrCreateInstance('#advanced-reports-filter').hide();
-        populateManageReportsPage();
-      });
-      document.getElementById('manage-reports-prev-day').addEventListener('click', () => changeReportDate(-1));
-      document.getElementById('manage-reports-next-day').addEventListener('click', () => changeReportDate(1));
-
-      // (Letakkan ini di dalam 'DOMContentLoaded', setelah listener 'manage-reports-next-day')
-
-      // Listener untuk filter harian RIWAYAT PEMBAYARAN
-      document.getElementById('payment-history-daily-date').addEventListener('change', () => {
-        bootstrap.Collapse.getOrCreateInstance('#advanced-payment-filter').hide();
-        populatePaymentHistory();
-      });
-      document.getElementById('payment-history-prev-day').addEventListener('click', () => changePaymentDate(-1));
-      document.getElementById('payment-history-next-day').addEventListener('click', () => changePaymentDate(1));
-      // Listener untuk select metode (karena sekarang di luar)
-      document.getElementById('payment-history-method').addEventListener('change', () => {
-        // Jika filter harian aktif, refresh. Jika filter canggih, jangan lakukan apa-apa (tunggu tombol apply)
-        const isAdvanced = document.getElementById('advanced-payment-filter').classList.contains('show');
-        if (!isAdvanced) {
-          populatePaymentHistory();
-        }
-      });
-
-      // (Letakkan ini di dalam 'DOMContentLoaded', setelah listener 'payment-history-method')
-
-      // Listener untuk filter baru di tab "Tagihan Saat Ini"
-      document.getElementById('tagihan-metode-filter').addEventListener('change', populatePembayaranPage);
-
-      // (Sekitar baris 2531 di index.html)
-      // Listener untuk filter di halaman SO Manage Reports
-      const soReportFilterBtn = document.getElementById('so-report-filter-btn');
-      if (soReportFilterBtn) {
-        soReportFilterBtn.addEventListener('click', populateSuperownerReports);
-      }
-      // (Sekitar baris 2538 di index.html)
-
-      // Listener untuk halaman baru SO Transactions
-      const soTxDailyDate = document.getElementById('so-tx-daily-date');
-      if (soTxDailyDate) soTxDailyDate.addEventListener('change', () => {
-        bootstrap.Collapse.getOrCreateInstance('#so-advanced-tx-filter').hide();
-        populateSuperownerTransactions();
-      });
-
-      const soTxPrevDay = document.getElementById('so-tx-prev-day');
-      if (soTxPrevDay) soTxPrevDay.addEventListener('click', () => changeSuperownerTxDate(-1));
-
-      const soTxNextDay = document.getElementById('so-tx-next-day');
-      if (soTxNextDay) soTxNextDay.addEventListener('click', () => changeSuperownerTxDate(1));
-
-      const soTxFilterBtn = document.getElementById('so-tx-filter-btn');
-      if (soTxFilterBtn) soTxFilterBtn.addEventListener('click', populateSuperownerTransactions);
-      const ownerSupplierSelect = document.getElementById('owner-supplier-select');
-      if (ownerSupplierSelect) {
-        // Listener ini memastikan data tampil saat supplier DIPILIH
-        ownerSupplierSelect.addEventListener('change', fetchAndDisplayOwnerSupplierHistory);
-      }
-      const chartFilterBtn = document.getElementById('chart-filter-btn');
-      if (chartFilterBtn) {
-        chartFilterBtn.addEventListener('click', fetchAndDrawCharts);
-      }
-      const ownerHistoryFilterBtn = document.getElementById('owner-history-filter-btn');
-      if (ownerHistoryFilterBtn) {
-        // Listener ini memastikan data ter-filter saat tombol DIKLIK
-        ownerHistoryFilterBtn.addEventListener('click', fetchAndDisplayOwnerSupplierHistory);
-      }
-      /*const searchInput = document.getElementById('product-search-input');
-      if (searchInput) {
-          searchInput.addEventListener('input', filterReportTables);
-      }*/
-      manageFooterVisibility();
-      handleAuthRouting();
-      updateDate();
-    });
-    // Fungsi untuk memfilter baris tabel berdasarkan input pencarian
-    document.addEventListener('DOMContentLoaded', function () {
-      const searchInput = document.getElementById('main-report-search-input');
-      if (!searchInput) return;
-
-      searchInput.addEventListener('input', function () {
-        const filter = this.value.toLowerCase();
-        const tables = document.querySelectorAll('#report-tables-container table tbody');
-
-        tables.forEach(tbody => {
-          const rows = tbody.querySelectorAll('tr');
-          rows.forEach(row => {
-            const text = row.textContent.toLowerCase();
-            row.style.display = text.includes(filter) ? '' : 'none';
-          });
+      tables.forEach(tbody => {
+        const rows = tbody.querySelectorAll('tr');
+        rows.forEach(row => {
+          const text = row.textContent.toLowerCase();
+          row.style.display = text.includes(filter) ? '' : 'none';
         });
       });
     });
+  });
 
-  </script>
+</script>
