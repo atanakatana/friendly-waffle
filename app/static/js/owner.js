@@ -971,6 +971,7 @@ function openPaymentModal(supplierId, supplierName, amount) {
   ).textContent = `${supplierData.metode_pembayaran}: ${supplierData.nomor_rekening}`;
   modals.payment.show();
 }
+
 async function handlePaymentSubmit(e) {
   e.preventDefault();
   const payload = {
@@ -994,15 +995,41 @@ async function handlePaymentSubmit(e) {
 
 document.addEventListener("DOMContentLoaded", () => {
   document
-      .getElementById("edit-admin-form")
-      .addEventListener("submit", (e) => handleFormSubmit("admin", e));
-    document
-      .getElementById("edit-lapak-form")
-      .addEventListener("submit", (e) => handleFormSubmit("lapak", e));
-    document
-      .getElementById("edit-supplier-form")
-      .addEventListener("submit", (e) => handleFormSubmit("supplier", e));
-    document
-      .getElementById("payment-confirmation-form")
-      .addEventListener("submit", handlePaymentSubmit);
-    
+    .getElementById("edit-admin-form")
+    ?.addEventListener("submit", (e) => handleFormSubmit("admin", e));
+  document
+    .getElementById("edit-lapak-form")
+    ?.addEventListener("submit", (e) => handleFormSubmit("lapak", e));
+  document
+    .getElementById("edit-supplier-form")
+    ?.addEventListener("submit", (e) => handleFormSubmit("supplier", e));
+  document
+    .getElementById("payment-confirmation-form")
+    ?.addEventListener("submit", handlePaymentSubmit);
+  const lpd = document.getElementById("laporan-pendapatan-datepicker");
+  if (lpd) lpd.addEventListener("change", populateLaporanPendapatan);
+  const lbd = document.getElementById("laporan-biaya-datepicker");
+  if (lbd) lbd.addEventListener("change", populateLaporanBiaya);
+
+  const todayISO = new Date().toISOString().split("T")[0];
+  ["laporan-pendapatan-datepicker", "laporan-biaya-datepicker"].forEach(
+    (id) => {
+      const el = document.getElementById(id);
+      if (el) el.value = todayISO;
+    }
+  );
+
+  const filterBtn = document.getElementById('supplier-history-filter-btn');
+    if (filterBtn) {
+      filterBtn.addEventListener('click', populateSupplierHistoryPage);
+    }
+    const manageReportsFilterBtn = document.getElementById('manage-reports-filter-btn');
+    if (manageReportsFilterBtn) {
+      manageReportsFilterBtn.addEventListener('click', populateManageReportsPage);
+    }
+
+    const paymentHistoryFilterBtn = document.getElementById('payment-history-filter-btn');
+    if (paymentHistoryFilterBtn) {
+      paymentHistoryFilterBtn.addEventListener('click', populatePaymentHistory);
+    }
+});

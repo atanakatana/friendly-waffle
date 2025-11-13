@@ -132,13 +132,6 @@
         rekapIcon.classList.add('bi-chevron-up');
       });
     }
-    const todayISO = new Date().toISOString().split("T")[0];
-    ["laporan-pendapatan-datepicker", "laporan-biaya-datepicker"].forEach(
-      (id) => {
-        const el = document.getElementById(id);
-        if (el) el.value = todayISO;
-      }
-    );
     document
       .getElementById("login-form")
       .addEventListener("submit", handleLogin);
@@ -152,10 +145,7 @@
     // PERUBAHAN 8: Tambahkan event listener untuk form manual
 
 
-    const lpd = document.getElementById("laporan-pendapatan-datepicker");
-    if (lpd) lpd.addEventListener("change", populateLaporanPendapatan);
-    const lbd = document.getElementById("laporan-biaya-datepicker");
-    if (lbd) lbd.addEventListener("change", populateLaporanBiaya);
+    
     document
       .getElementById("kirim-laporan-btn")
       .addEventListener("click", handleKirimLaporan);
