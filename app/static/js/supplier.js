@@ -228,3 +228,7 @@ async function unarchiveNotification(id) {
   }
   showToast(result.message, result.success);
 }
+
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById('supplier-history-filter-btn')?.addEventListener('click', populateSupplierHistoryPage);
+});

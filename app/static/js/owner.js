@@ -1020,16 +1020,47 @@ document.addEventListener("DOMContentLoaded", () => {
   );
 
   const filterBtn = document.getElementById('supplier-history-filter-btn');
-    if (filterBtn) {
-      filterBtn.addEventListener('click', populateSupplierHistoryPage);
-    }
-    const manageReportsFilterBtn = document.getElementById('manage-reports-filter-btn');
-    if (manageReportsFilterBtn) {
-      manageReportsFilterBtn.addEventListener('click', populateManageReportsPage);
-    }
+  if (filterBtn) {
+    filterBtn.addEventListener('click', populateSupplierHistoryPage);
+  }
+  const manageReportsFilterBtn = document.getElementById('manage-reports-filter-btn');
+  if (manageReportsFilterBtn) {
+    manageReportsFilterBtn.addEventListener('click', populateManageReportsPage);
+  }
 
-    const paymentHistoryFilterBtn = document.getElementById('payment-history-filter-btn');
-    if (paymentHistoryFilterBtn) {
-      paymentHistoryFilterBtn.addEventListener('click', populatePaymentHistory);
+  const paymentHistoryFilterBtn = document.getElementById('payment-history-filter-btn');
+  if (paymentHistoryFilterBtn) {
+    paymentHistoryFilterBtn.addEventListener('click', populatePaymentHistory);
+  }
+
+  document.getElementById('payment-history-daily-date').addEventListener('change', () => {
+    bootstrap.Collapse.getOrCreateInstance('#advanced-payment-filter').hide();
+    populatePaymentHistory();
+  });
+  document.getElementById('payment-history-prev-day').addEventListener('click', () => changePaymentDate(-1));
+  document.getElementById('payment-history-next-day').addEventListener('click', () => changePaymentDate(1));
+  // Listener untuk select metode (karena sekarang di luar)
+  document.getElementById('payment-history-method').addEventListener('change', () => {
+    // Jika filter harian aktif, refresh. Jika filter canggih, jangan lakukan apa-apa (tunggu tombol apply)
+    const isAdvanced = document.getElementById('advanced-payment-filter').classList.contains('show');
+    if (!isAdvanced) {
+      populatePaymentHistory();
     }
+  });
+
+  document.getElementById('tagihan-metode-filter').addEventListener('change', populatePembayaranPage);
+  const ownerSupplierSelect = document.getElementById('owner-supplier-select');
+  if (ownerSupplierSelect) {
+    // Listener ini memastikan data tampil saat supplier DIPILIH
+    ownerSupplierSelect.addEventListener('change', fetchAndDisplayOwnerSupplierHistory);
+  }
+  const chartFilterBtn = document.getElementById('chart-filter-btn');
+  if (chartFilterBtn) {
+    chartFilterBtn.addEventListener('click', fetchAndDrawCharts);
+  }
+  const ownerHistoryFilterBtn = document.getElementById('owner-history-filter-btn');
+  if (ownerHistoryFilterBtn) {
+    // Listener ini memastikan data ter-filter saat tombol DIKLIK
+    ownerHistoryFilterBtn.addEventListener('click', fetchAndDisplayOwnerSupplierHistory);
+  }
 });

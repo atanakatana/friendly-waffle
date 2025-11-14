@@ -792,3 +792,53 @@ async function populateHistoryLaporanPage() {
       } Pcs.</small></div>`;
   });
 }
+
+document.addEventListener("DOMContentLoaded", () => {
+  const rekapCollapseEl = document.getElementById('rekap-manual-collapse');
+  if (rekapCollapseEl) {
+    const rekapText = document.getElementById('toggle-rekap-text');
+    const rekapIcon = document.getElementById('toggle-rekap-icon');
+
+    // Saat akan ditampilkan (show)
+    rekapCollapseEl.addEventListener('show.bs.collapse', event => {
+      rekapText.textContent = 'Sembunyikan Input';
+      rekapIcon.classList.remove('bi-chevron-up');
+      rekapIcon.classList.add('bi-chevron-down');
+    });
+
+    // Saat akan disembunyikan (hide)
+    rekapCollapseEl.addEventListener('hide.bs.collapse', event => {
+      rekapText.textContent = 'Input Hasil Penjualan';
+      rekapIcon.classList.remove('bi-chevron-down');
+      rekapIcon.classList.add('bi-chevron-up');
+    });
+  }
+  document
+    .getElementById("add-product-to-supplier-form")
+    .addEventListener("submit", handleAddNewProduct);
+
+  document
+    .getElementById("kirim-laporan-btn")
+    .addEventListener("click", handleKirimLaporan);
+  // Pasang event listener untuk input footer DI SINI
+  document.querySelectorAll(".rekap-input").forEach(input => {
+    input.addEventListener("input", formatNumberInput); // Untuk format angka
+    input.addEventListener("keyup", updateSummarySection); // Untuk kalkulasi ulang
+  });
+
+  const searchInput = document.getElementById('main-report-search-input');
+  if (!searchInput) return;
+
+  searchInput.addEventListener('input', function () {
+    const filter = this.value.toLowerCase();
+    const tables = document.querySelectorAll('#report-tables-container table tbody');
+
+    tables.forEach(tbody => {
+      const rows = tbody.querySelectorAll('tr');
+      rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(filter) ? '' : 'none';
+      });
+    });
+  });
+});

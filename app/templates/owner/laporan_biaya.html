@@ -1,3 +1,7 @@
+{% extends "owner/base.html" %}
+
+{% block content %}
+
 <div id="owner-laporan-biaya-page" class="page container py-4">
   <header class="d-flex align-items-center pb-3 mb-4 border-bottom">
     <button class="btn btn-light me-3" onclick="showPage('owner-dashboard')">
@@ -28,3 +32,85 @@
     </div>
   </div>
 </div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/owner.js') }}"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const datepicker = document.getElementById('laporan-biaya-datepicker');
+    const today = new Date().toISOString().split('T')[0];
+    datepicker.value = today;
+
+    function loadLaporanBiaya(date) {
+      const accordion = document.getElementById('laporan-biaya-accordion');
+      const totalBiayaElem = document.getElementById('total-biaya-harian');
+      accordion.innerHTML = `
+        <div class="text-center p-5">
+          <div class="spinner-border text-warning"></div>
+          <p class="mt-2 text-muted">Memuat data...</p>
+        </div>
+      `;
+
+      fetch(`/owner/api/laporan_biaya?date=${date}`)
+        .then(response => response.json())
+        .then(data => {
+          let totalBiaya = 0;
+          let accordionContent = '';
+
+          if (data.length === 0) {
+            accordionContent = `
+              <div class="alert alert-info" role="alert">
+                Tidak ada data biaya supplier untuk tanggal ini.
+              </div>
+            `;
+          } else {
+            data.forEach((item, index) => {
+              totalBiaya += item.total_biaya;
+              accordionContent += `
+                <div class="accordion-item">
+                  <h2 class="accordion-header" id="heading-${index}">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-${index}" aria-expanded="false" aria-controls="collapse-${index}">
+                      Supplier: ${item.supplier_name} - Total Biaya: Rp ${item.total_biaya.toLocaleString()}
+                    </button>
+                  </h2>
+                  <div id="collapse-${index}" class="accordion-collapse collapse" aria-labelledby="heading-${index}" data-bs-parent="#laporan-biaya-accordion">
+                    <div class="accordion-body">
+                      <ul class="list-group">
+              `;
+              item.details.forEach(detail => {
+                accordionContent += `
+                  <li class="list-group-item d-flex justify-content-between align-items-center">
+                    ${detail.item_name} (Qty: ${detail.quantity})
+                    <span>Rp ${detail.cost.toLocaleString()}</span>
+                  </li>
+                `;
+              });
+              accordionContent += `
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              `;
+            });
+          }
+          accordion.innerHTML = accordionContent;
+          totalBiayaElem.textContent = `Rp ${totalBiaya.toLocaleString()}`;
+        })
+        .catch(error => {
+          console.error('Error fetching laporan biaya:', error);
+          accordion.innerHTML = `
+            <div class="alert alert-danger" role="alert">
+              Terjadi kesalahan saat memuat data. Silakan coba lagi.
+            </div>
+          `;
+        });
+    }
+    loadLaporanBiaya(today);
+    datepicker.addEventListener('change', (e) => {
+      loadLaporanBiaya(e.target.value);
+    });
+  });
+</script>
+{% endblock %}

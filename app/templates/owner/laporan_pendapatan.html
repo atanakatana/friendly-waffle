@@ -1,3 +1,7 @@
+{% extends "owner/base.html" %}
+
+{% block content %}
+
 <div id="owner-laporan-pendapatan-page" class="page container py-4">
   <header class="d-flex align-items-center pb-3 mb-4 border-bottom">
     <button class="btn btn-light me-3" onclick="showPage('owner-dashboard')">
@@ -26,3 +30,79 @@
     </div>
   </div>
 </div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/owner.js') }}"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const datepicker = document.getElementById('laporan-pendapatan-datepicker');
+    const today = new Date().toISOString().split('T')[0];
+    datepicker.value = today;
+
+    function loadLaporanPendapatan(date) {
+      const accordion = document.getElementById('laporan-pendapatan-accordion');
+      const totalPendapatanElem = document.getElementById('total-pendapatan-harian');
+      accordion.innerHTML = `
+        <div class="text-center p-5">
+          <div class="spinner-border text-primary"></div>
+          <p class="mt-2 text-muted">Memuat data...</p>
+        </div>
+      `;
+
+      fetch(`/owner/api/laporan_pendapatan?date=${date}`)
+        .then(response => response.json())
+        .then(data => {
+          let totalPendapatan = 0;
+          let accordionContent = '';
+          data.forEach((item, index) => {
+            totalPendapatan += item.total_pendapatan;
+            accordionContent += `
+              <div class="accordion-item">
+                <h2 class="accordion-header" id="heading-${index}">
+                  <button class="accordion-button ${index !== 0 ? 'collapsed' : ''}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-${index}" aria-expanded="${index === 0 ? 'true' : 'false'}" aria-controls="collapse-${index}">
+                    Lapak: ${item.lapak_nama} - Total Pendapatan: Rp ${item.total_pendapatan.toLocaleString('id-ID')}
+                  </button>
+                </h2>
+                <div id="collapse-${index}" class="accordion-collapse collapse ${index === 0 ? 'show' : ''}" aria-labelledby="heading-${index}" data-bs-parent="#laporan-pendapatan-accordion">
+                  <div class="accordion-body">
+                    <ul class="list-group">
+                      ${item.detail.map(detail => `
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                          <div>
+                            <strong>${detail.item_nama}</strong><br/>
+                            Jumlah Terjual: ${detail.jumlah_terjual}
+                          </div>
+                          <span>Rp ${detail.subtotal.toLocaleString('id-ID')}</span>
+                        </li>
+                      `).join('')}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            `;
+          });
+          totalPendapatanElem.textContent = `Rp ${totalPendapatan.toLocaleString('id-ID')}`;
+          accordion.innerHTML = accordionContent || `
+            <div class="alert alert-info" role="alert">
+              Tidak ada data pendapatan untuk tanggal ini.
+            </div>
+          `;
+        })
+        .catch(error => {
+          console.error('Error fetching laporan pendapatan:', error);
+          accordion.innerHTML = `
+            <div class="alert alert-danger" role="alert">
+              Terjadi kesalahan saat memuat data. Silakan coba lagi nanti.
+            </div>
+          `;
+        });
+    }
+    datepicker.addEventListener('change', () => {
+      loadLaporanPendapatan(datepicker.value);
+    });
+    loadLaporanPendapatan(today);
+  });
+</script>
+{% endblock %}

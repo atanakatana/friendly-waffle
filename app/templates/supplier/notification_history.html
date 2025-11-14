@@ -1,3 +1,7 @@
+{% extends "supplier/base.html" %}
+
+{% block content %}
+
 <div id="supplier-notification-history-page" class="page container py-4">
   <header class="d-flex align-items-center pb-3 mb-4 border-bottom">
     <button class="btn btn-light me-3" onclick="showPage('supplier-dashboard')">
@@ -11,3 +15,9 @@
     </div>
   </div>
 </div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/supplier.js') }}"></script>
+{% endblock %}

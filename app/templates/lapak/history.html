@@ -1,3 +1,6 @@
+{% extends "lapak/base.html" %}
+
+{% block content %}
 <div id="history-laporan-page" class="page container py-4">
   <header class="d-flex align-items-center pb-3 mb-4 border-bottom">
     <button class="btn btn-light me-3" onclick="showPage('lapak-dashboard')">
@@ -10,3 +13,13 @@
   </div>
   <div id="history-list" class="list-group"></div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/lapak.js') }}"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    loadLaporanHistory();
+  });
+</script>
+{% endblock %}

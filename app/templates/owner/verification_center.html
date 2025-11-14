@@ -1,3 +1,6 @@
+{% extends "owner/base.html" %}
+
+{% block content %}
 <div id="owner-verification-center-page" class="page container py-4" style="display: none;">
   <header class="d-flex align-items-center pb-3 mb-4 border-bottom">
     <button class="btn btn-light me-3" onclick="showPage('owner-dashboard')">
@@ -27,3 +30,13 @@
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/owner.js') }}"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    loadVerificationReports();
+  });
+</script>
+{% endblock %}

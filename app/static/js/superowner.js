@@ -456,3 +456,42 @@ async function handleSuperownerDeleteOwner(id) {
   showToast(result.message, resp.ok);
   if (resp.ok) await populateSuperownerManageOwners();
 }
+
+function changeSuperownerTxDate(dayDelta) {
+  const dateEl = document.getElementById('so-tx-daily-date');
+  const newDate = new Date(dateEl.value);
+  newDate.setDate(newDate.getDate() + dayDelta);
+  dateEl.value = newDate.toISOString().split('T')[0];
+  // Otomatis tutup filter canggih & refresh
+  bootstrap.Collapse.getOrCreateInstance('#so-advanced-tx-filter').hide();
+  populateSuperownerTransactions();
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("superowner-report-filter-btn").addEventListener("click", populateSuperownerReports);
+  document.getElementById("superowner-tx-filter-btn").addEventListener("click", populateSuperownerTransactions);
+  document.getElementById("so-tx-prev-day").addEventListener("click", () => changeSuperownerTxDate(-1));
+  document.getElementById("so-tx-next-day").addEventListener("click", () => changeSuperownerTxDate(1));
+  document.getElementById("superowner-edit-owner-form").addEventListener("submit", handleSuperownerOwnerFormSubmit);
+  const soReportFilterBtn = document.getElementById('so-report-filter-btn');
+  if (soReportFilterBtn) {
+    soReportFilterBtn.addEventListener('click', populateSuperownerReports);
+  }
+  // (Sekitar baris 2538 di index.html)
+
+  // Listener untuk halaman baru SO Transactions
+  const soTxDailyDate = document.getElementById('so-tx-daily-date');
+  if (soTxDailyDate) soTxDailyDate.addEventListener('change', () => {
+    bootstrap.Collapse.getOrCreateInstance('#so-advanced-tx-filter').hide();
+    populateSuperownerTransactions();
+  });
+
+  const soTxPrevDay = document.getElementById('so-tx-prev-day');
+  if (soTxPrevDay) soTxPrevDay.addEventListener('click', () => changeSuperownerTxDate(-1));
+
+  const soTxNextDay = document.getElementById('so-tx-next-day');
+  if (soTxNextDay) soTxNextDay.addEventListener('click', () => changeSuperownerTxDate(1));
+
+  const soTxFilterBtn = document.getElementById('so-tx-filter-btn');
+  if (soTxFilterBtn) soTxFilterBtn.addEventListener('click', populateSuperownerTransactions);
+});
