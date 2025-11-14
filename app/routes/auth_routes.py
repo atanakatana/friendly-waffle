@@ -15,7 +15,7 @@ def login_page():
     return render_template('login.html')
 
 # handle login request (diganti juga ke auth_bp.route)
-@auth_bp.route('/api/login', methods=['POST'])
+@auth_bp.route('/login', methods=['POST'])
 def handle_login():
     data = request.json
     username = data.get('username', '').lower()

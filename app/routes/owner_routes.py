@@ -11,7 +11,7 @@ from calendar import monthrange
 # import dari repo internal (lokal)
 from app import db
 from app.models import (
-  Admin, Lapak, Supplier, Product, LaporanHarian, LaporanHarianProduk, SupplierBalance, SuperOwnerBalance, PembayaranSupplier
+  Admin, Lapak, Supplier, Product, LaporanHarian, LaporanHarianProduk, SupplierBalance, SuperOwnerBalance, PembayaranSupplier, RiwayatPenarikanSuperOwner, Notifikasi
 )
 
 owner_bp = Blueprint('owner', __name__, url_prefix='/api/owner')
