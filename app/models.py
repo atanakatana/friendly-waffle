@@ -6,7 +6,11 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql import func, or_
 from sqlalchemy.orm import joinedload
 from calendar import monthrange
-from app import db # mengimpor objek db dari app.py
+from app import db
+from werkzeug.security import generate_password_hash, check_password_hash
+
+HARGA_BELI_DEFAULT = 8000.0
+HARGA_JUAL_DEFAULT = 10000.0
 
 product_lapak_association = db.Table('product_lapak',
     db.Column('product_id', db.Integer, db.ForeignKey('product.id'), primary_key=True),
@@ -32,6 +36,12 @@ class Admin(db.Model):
         db.UniqueConstraint('created_by_owner_id', 'username', name='_owner_username_uc'),
         db.UniqueConstraint('created_by_owner_id', 'email', name='_owner_email_uc')
     )
+    def set_password(self, password):
+        # membuat hash dari password
+        self.password = generate_password_hash(password)
+    def check_password(self, password):
+        # membaca hash password
+        return check_password_hash(self.password, password)
 
 class SuperOwner(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -41,6 +51,10 @@ class SuperOwner(db.Model):
     nomor_kontak = db.Column(db.String(20), nullable=True)
     password = db.Column(db.String(120), nullable=False)
     owners= db.relationship('Admin', backref='super_owner', lazy=True)
+    def set_password(self, password):
+        self.password = generate_password_hash(password)
+    def check_password(self, password):
+        return check_password_hash(self.password, password)
 
 class Supplier(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -59,6 +73,10 @@ class Supplier(db.Model):
         db.UniqueConstraint('owner_id', 'username', name='_owner_supplier_username_uc'),
         db.UniqueConstraint('owner_id', 'nomor_register', name='_owner_supplier_reg_uc')
     )
+    def set_password(self, password):
+        self.password = generate_password_hash(password)
+    def check_password(self, password):
+        return check_password_hash(self.password, password)
     
 class Lapak(db.Model):
     id = db.Column(db.Integer, primary_key=True)

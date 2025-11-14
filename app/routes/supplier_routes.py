@@ -1,4 +1,3 @@
-# import dari library luar milik python
 from flask import Blueprint, jsonify, current_app, request
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql import func
@@ -6,7 +5,6 @@ from sqlalchemy.orm import joinedload
 import datetime
 import logging
 
-# import dari repo internal (lokal)
 from app import db
 from app.models import (
   Admin, Lapak, Supplier, Product, LaporanHarian, LaporanHarianProduk, SupplierBalance, SuperOwnerBalance, PembayaranSupplier, Notifikasi
@@ -14,7 +12,6 @@ from app.models import (
 
 supplier_bp = Blueprint('supplier', __name__, url_prefix='/api/supplier')
 
-# --- SUPPLIER API ---
 @supplier_bp.route('/get_data_supplier/<int:supplier_id>', methods=['GET'])
 def get_data_supplier(supplier_id):
     try:
@@ -34,12 +31,9 @@ def get_data_supplier(supplier_id):
 @supplier_bp.route('/get_supplier_history/<int:supplier_id>', methods=['GET'])
 def get_supplier_history(supplier_id):
     try:
-        # Ambil semua parameter dari request
         start_date_str = request.args.get('start_date')
         end_date_str = request.args.get('end_date')
-        lapak_id = request.args.get('lapak_id') # Parameter baru
-
-        # Query pembayaran tidak berubah
+        lapak_id = request.args.get('lapak_id') 
         payments_query = PembayaranSupplier.query.filter_by(supplier_id=supplier_id)
         if start_date_str:
             start_date = datetime.datetime.strptime(start_date_str, '%Y-%m-%d').date()
@@ -51,7 +45,6 @@ def get_supplier_history(supplier_id):
         payments = payments_query.order_by(PembayaranSupplier.tanggal_pembayaran.desc()).all()
         payment_list = [{"tanggal": p.tanggal_pembayaran.strftime('%Y-%m-%d'), "jumlah": p.jumlah_pembayaran, "metode": p.metode_pembayaran} for p in payments]
 
-        # Query dasar untuk penjualan
         sales_query = db.session.query(
             LaporanHarian.tanggal, Lapak.lokasi, Product.nama_produk,
             LaporanHarianProduk.jumlah_terjual
@@ -61,7 +54,6 @@ def get_supplier_history(supplier_id):
          .join(Lapak, Lapak.id == LaporanHarian.lapak_id)\
          .filter(Product.supplier_id == supplier_id, LaporanHarian.status == 'Terkonfirmasi')
 
-        # Terapkan filter tanggal pada penjualan
         if start_date_str:
             start_date = datetime.datetime.strptime(start_date_str, '%Y-%m-%d').date()
             sales_query = sales_query.filter(LaporanHarian.tanggal >= start_date)
@@ -69,15 +61,12 @@ def get_supplier_history(supplier_id):
             end_date = datetime.datetime.strptime(end_date_str, '%Y-%m-%d').date()
             sales_query = sales_query.filter(LaporanHarian.tanggal <= end_date)
         
-        # --- PERUBAHAN LOGIKA DI SINI ---
-        # Terapkan filter lapak jika ada
         if lapak_id:
             sales_query = sales_query.filter(LaporanHarian.lapak_id == lapak_id)
 
         sales = sales_query.order_by(LaporanHarian.tanggal.desc(), Lapak.lokasi).all()
         sales_list = [{"tanggal": s.tanggal.strftime('%Y-%m-%d'), "lokasi": s.lokasi, "nama_produk": s.nama_produk, "terjual": s.jumlah_terjual} for s in sales]
         
-        # Ambil daftar lapak untuk mengisi dropdown di frontend
         all_lapaks = Lapak.query.order_by(Lapak.lokasi).all()
         lapak_list = [{"id": l.id, "lokasi": l.lokasi} for l in all_lapaks]
         
@@ -87,12 +76,9 @@ def get_supplier_history(supplier_id):
         logging.error(f"Error getting supplier history: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
 
-# (Letakkan ini di dalam file app.py, di bagian SUPPLIER API)
-
 @supplier_bp.route('/get_supplier_notifications/<int:supplier_id>', methods=['GET'])
 def get_supplier_notifications(supplier_id):
     try:
-        # Ambil notifikasi yang belum diarsipkan, urutkan dari yang terbaru
         notifications = Notifikasi.query.filter(
             Notifikasi.supplier_id == supplier_id,
             Notifikasi.status != 'diarsipkan'
@@ -112,20 +98,15 @@ def get_supplier_notifications(supplier_id):
         logging.error(f"Error getting supplier notifications: {str(e)}")
         return jsonify({"success": False, "message": "Gagal mengambil notifikasi."}), 500
       
-# (Letakkan ini setelah fungsi get_supplier_notifications)
-
-# Ganti fungsi lama dengan versi baru ini
 @supplier_bp.route('/update_notification_status/<int:notification_id>', methods=['POST'])
 def update_notification_status(notification_id):
     data = request.json
     new_status = data.get('status')
 
-    # PERUBAHAN DI SINI: Izinkan 'baru' sebagai status baru
     if new_status not in ['dibaca', 'diarsipkan', 'baru']:
         return jsonify({"success": False, "message": "Status tidak valid."}), 400
 
     try:
-        # (Sisa dari fungsi ini tetap sama, tidak perlu diubah)
         notification = Notifikasi.query.get(notification_id)
         if not notification:
             return jsonify({"success": False, "message": "Notifikasi tidak ditemukan."}), 404
@@ -144,7 +125,6 @@ def update_notification_status(notification_id):
 @supplier_bp.route('/get_archived_notifications/<int:supplier_id>', methods=['GET'])
 def get_archived_notifications(supplier_id):
     try:
-        # Ambil hanya notifikasi yang statusnya 'diarsipkan'
         notifications = Notifikasi.query.filter_by(
             supplier_id=supplier_id,
             status='diarsipkan'
@@ -160,5 +140,3 @@ def get_archived_notifications(supplier_id):
         return jsonify({"success": True, "notifications": notif_list})
     except Exception as e:
         return jsonify({"success": False, "message": "Gagal mengambil arsip notifikasi."}), 500
-      
-# (Letakkan ini setelah 'get_archived_notifications' dan sebelum 'get_report_details')

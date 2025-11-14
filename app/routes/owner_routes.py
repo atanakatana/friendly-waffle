@@ -1,4 +1,3 @@
-# import dari library luar milik python
 from flask import Blueprint, jsonify, current_app, request
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql import func
@@ -8,19 +7,15 @@ import logging
 import re
 from calendar import monthrange
 
-# import dari repo internal (lokal)
 from app import db
 from app.models import (
   Admin, Lapak, Supplier, Product, LaporanHarian, LaporanHarianProduk, SupplierBalance, SuperOwnerBalance, PembayaranSupplier, RiwayatPenarikanSuperOwner, Notifikasi
 )
 
 owner_bp = Blueprint('owner', __name__, url_prefix='/api/owner')
-
-# --- OWNER API ---
 @owner_bp.route('/get_data_owner/<int:owner_id>', methods=['GET'])
 def get_owner_data(owner_id):
     try:
-        # Bagian ini (mengambil admin, lapak, supplier) sudah benar
         admins = Admin.query.filter(
             Admin.created_by_owner_id == owner_id,
             Admin.super_owner_id.is_(None)
@@ -41,7 +36,6 @@ def get_owner_data(owner_id):
                 "metode_pembayaran": s.metode_pembayaran, "nomor_rekening": s.nomor_rekening
             })
 
-        # === PERBAIKAN KPI DIMULAI DI SINI ===
         today = datetime.date.today()
         start_of_month = today.replace(day=1)
         
@@ -60,12 +54,7 @@ def get_owner_data(owner_id):
                 func.sum(LaporanHarian.keuntungan_superowner).label('total_profit_superowner')
             ).filter(
                 LaporanHarian.lapak_id.in_(lapak_ids),
-                
-                # --- INI ADALAH PERBAIKANNYA ---
-                # Ubah dari '==' menjadi '.in_()'
                 LaporanHarian.status.in_(['Terkonfirmasi', 'Difinalisasi']),
-                # ------------------------------
-                
                 LaporanHarian.tanggal >= start_of_month,
                 LaporanHarian.tanggal <= today
             ).first()
@@ -75,7 +64,6 @@ def get_owner_data(owner_id):
                 total_biaya_bulan_ini = kpi_data.total_biaya or 0
                 profit_owner_bulan_ini = kpi_data.total_profit_owner or 0
                 profit_superowner_bulan_ini = kpi_data.total_profit_superowner or 0
-        # === AKHIR PERBAIKAN KPI ===
 
         summary_data = {
             "pendapatan_bulan_ini": total_pendapatan_bulan_ini,
@@ -89,16 +77,13 @@ def get_owner_data(owner_id):
         db.session.rollback()
         logging.error(f"Error getting owner data: {str(e)}")
         return jsonify({"success": False, "message": f"Terjadi kesalahan server: {str(e)}"}), 500
-
-# GANTI FUNGSI LAMA DENGAN VERSI BARU INI
+      
 @owner_bp.route('/get_owner_verification_reports/<int:owner_id>', methods=['GET'])
 def get_owner_verification_reports(owner_id):
     try:
-        # === LOGIKA BARU ===
-        # Ambil semua laporan dari lapak yang 'owner_id'-nya cocok
         reports = LaporanHarian.query.join(Lapak).filter(
             Lapak.owner_id == owner_id,
-            LaporanHarian.status == 'Terkonfirmasi' # <-- INI LOGIKA BARU (Sudah dikonfirmasi)
+            LaporanHarian.status == 'Terkonfirmasi'
         ).options(
             joinedload(LaporanHarian.lapak)
         ).order_by(LaporanHarian.tanggal.desc()).all()
@@ -116,8 +101,7 @@ def get_owner_verification_reports(owner_id):
         db.session.rollback()
         logging.error(f"Error getting verification reports: {str(e)}")
         return jsonify({"success": False, "message": "Gagal mengambil data verifikasi laporan."}), 500
-      
-# GANTI FUNGSI LAMA DENGAN VERSI BARU INI
+
 @owner_bp.route('/add_admin', methods=['POST'])
 def add_admin():
     data = request.json
@@ -127,12 +111,13 @@ def add_admin():
             nama_lengkap=data['nama_lengkap'],
             username=data['username'], 
             email=data['email'], 
-            nomor_kontak=data['nomor_kontak'], 
-            password=data['password'],
-            # PERUBAHAN DI SINI: Terima super_owner_id jika ada
+            nomor_kontak=data['nomor_kontak'],
             super_owner_id=data.get('super_owner_id'),
             created_by_owner_id=data.get('created_by_owner_id'),
         )
+        # memanggil passwrdord setter
+        new_admin.set_password(data['password'])
+        
         db.session.add(new_admin)
         db.session.commit()
         return jsonify({"success": True, "message": "Admin/Owner berhasil ditambahkan"})
@@ -222,14 +207,10 @@ def delete_lapak(lapak_id):
     db.session.delete(lapak)
     db.session.commit()
     return jsonify({"success": True, "message": "Lapak berhasil dihapus"})
-
-# --- REVISI: Logika baru untuk nomor registrasi ---
-# --- REVISI: Ubah rute untuk menerima owner_id ---
+  
 @owner_bp.route('/get_next_supplier_reg_number/<int:owner_id>', methods=['GET'])
-def get_next_supplier_reg_number(owner_id): # <-- Terima owner_id
+def get_next_supplier_reg_number(owner_id):
     used_numbers = set()
-    
-    # --- REVISI: Filter supplier berdasarkan owner_id ---
     suppliers = Supplier.query.filter_by(owner_id=owner_id).filter(Supplier.nomor_register.like('REG%')).all()
     
     for s in suppliers:
@@ -237,19 +218,17 @@ def get_next_supplier_reg_number(owner_id): # <-- Terima owner_id
         if num_part:
             used_numbers.add(int(num_part.group()))
     
-    next_id = 1 # <-- Selalu mulai dari 1 (untuk owner ini)
+    next_id = 1
     while next_id in used_numbers:
         next_id += 1
         
     return jsonify({"success": True, "reg_number": f"REG{next_id:03d}"})
-  
-# --- REVISI: Tambahkan metode pembayaran & no rekening ---
+
 @owner_bp.route('/add_supplier', methods=['POST'])
 def add_supplier():
     data = request.json
     if data['password'] != data['password_confirm']:
         return jsonify({"success": False, "message": "Password dan konfirmasi password tidak cocok."}), 400
-    
     try:
         new_supplier = Supplier(
             nama_supplier=data['nama_supplier'],
@@ -257,11 +236,12 @@ def add_supplier():
             kontak=data.get('kontak'),
             nomor_register=data.get('nomor_register'),
             alamat=data.get('alamat'),
-            password=data['password'],
             metode_pembayaran=data.get('metode_pembayaran'),
             nomor_rekening=data.get('nomor_rekening'),
             owner_id=data.get('owner_id'),
         )
+        new_supplier.set_password(data['password'])
+        
         new_supplier.balance = SupplierBalance(balance=0.0)
         db.session.add(new_supplier)
         db.session.commit()
@@ -280,7 +260,6 @@ def add_supplier():
         logging.error(f"Error adding supplier: {str(e)}")
         return jsonify({"success": False, "message": f"Terjadi kesalahan server: {str(e)}"}), 500
 
-# --- REVISI: Update metode pembayaran & no rekening ---
 @owner_bp.route('/update_supplier/<int:supplier_id>', methods=['PUT'])
 def update_supplier(supplier_id):
     data = request.json
@@ -319,14 +298,11 @@ def delete_supplier(supplier_id):
 @owner_bp.route('/get_owner_supplier_history/<int:supplier_id>', methods=['GET'])
 def get_owner_supplier_history(supplier_id):
     try:
-        # Ambil parameter tanggal dari request
         start_date_str = request.args.get('start_date')
         end_date_str = request.args.get('end_date')
 
-        # Query dasar untuk pembayaran
         payments_query = PembayaranSupplier.query.filter_by(supplier_id=supplier_id)
         
-        # Query dasar untuk penjualan
         sales_query = db.session.query(
             LaporanHarian.tanggal, Lapak.lokasi, Product.nama_produk,
             LaporanHarianProduk.jumlah_terjual, LaporanHarianProduk.total_harga_beli
@@ -336,7 +312,6 @@ def get_owner_supplier_history(supplier_id):
          .join(Lapak, Lapak.id == LaporanHarian.lapak_id)\
          .filter(Product.supplier_id == supplier_id, LaporanHarian.status == 'Terkonfirmasi')
 
-        # Terapkan filter tanggal jika ada
         if start_date_str:
             start_date = datetime.datetime.strptime(start_date_str, '%Y-%m-%d').date()
             payments_query = payments_query.filter(PembayaranSupplier.tanggal_pembayaran >= start_date)
@@ -347,19 +322,15 @@ def get_owner_supplier_history(supplier_id):
             payments_query = payments_query.filter(PembayaranSupplier.tanggal_pembayaran <= end_date)
             sales_query = sales_query.filter(LaporanHarian.tanggal <= end_date)
 
-        # Eksekusi query setelah filter diterapkan
         payments = payments_query.order_by(PembayaranSupplier.tanggal_pembayaran.desc()).all()
         sales = sales_query.order_by(LaporanHarian.tanggal.desc(), Lapak.lokasi).all()
 
-        # Proses hasil
         payment_list = [{"tanggal": p.tanggal_pembayaran.strftime('%Y-%m-%d'), "jumlah": p.jumlah_pembayaran, "metode": p.metode_pembayaran} for p in payments]
         sales_list = [{"tanggal": s.tanggal.strftime('%Y-%m-%d'), "lokasi": s.lokasi, "nama_produk": s.nama_produk, "terjual": s.jumlah_terjual, "total_harga_beli": s.total_harga_beli} for s in sales]
         
         return jsonify({"success": True, "payments": payment_list, "sales": sales_list})
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
-# --- OWNER API (Laporan & Pembayaran) ---
-# TAMBAHKAN DUA FUNGSI BARU INI DI app.py
 
 @owner_bp.route('/get_laporan_pendapatan_harian')
 def get_laporan_pendapatan_harian():
@@ -452,41 +423,31 @@ def get_laporan_biaya_harian():
         logging.error(f"Error fetching biaya harian: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
 
-# (Sekitar baris 828 di app.py)
-# (Sekitar baris 828 di app.py)
 @owner_bp.route('/get_manage_reports')
 def get_manage_reports():
     try:
-        # Ambil semua parameter dari request
         start_date_str = request.args.get('start_date')
         end_date_str = request.args.get('end_date')
         supplier_id = request.args.get('supplier_id')
         status = request.args.get('status')
-        owner_id = request.args.get('owner_id') # <-- 1. AMBIL OWNER ID
+        owner_id = request.args.get('owner_id')
 
-        # Query dasar untuk semua laporan
         query = LaporanHarian.query.options(
             joinedload(LaporanHarian.lapak).joinedload(Lapak.penanggung_jawab)
         )
 
-        # === 2. TAMBAHKAN FILTER OWNER INI ===
         if owner_id:
             query = query.join(Lapak, LaporanHarian.lapak_id == Lapak.id)\
                          .filter(Lapak.owner_id == owner_id)
-        # === AKHIR FILTER OWNER ===
 
-        # === LOGIKA BARU UNTUK STATUS ===
         if status:
             if status == 'semua':
-                pass # Jangan filter apa-apa
+                pass
             else:
                 query = query.filter(LaporanHarian.status == status)
         else:
-            # Jika TIDAK ada parameter status, default ke 'Menunggu Konfirmasi'
             query = query.filter(LaporanHarian.status == 'Menunggu Konfirmasi')
-        # === AKHIR LOGIKA BARU ===
 
-        # Terapkan filter tanggal jika ada
         if start_date_str:
             start_date = datetime.datetime.strptime(start_date_str, '%Y-%m-%d').date()
             query = query.filter(LaporanHarian.tanggal >= start_date)
@@ -494,15 +455,12 @@ def get_manage_reports():
         if end_date_str:
             end_date = datetime.datetime.strptime(end_date_str, '%Y-%m-%d').date()
             query = query.filter(LaporanHarian.tanggal <= end_date)
-        
-        # --- PERUBAHAN LOGIKA DI SINI ---
-        # Terapkan filter supplier jika ada
+
         if supplier_id:
-            # Join ke tabel-tabel terkait untuk menemukan supplier_id
             query = query.join(LaporanHarian.rincian_produk)\
                          .join(LaporanHarianProduk.product)\
                          .filter(Product.supplier_id == supplier_id)\
-                         .distinct() # Gunakan distinct untuk menghindari duplikat laporan
+                         .distinct()
 
         reports = query.order_by(LaporanHarian.tanggal.desc()).all()
         
@@ -514,20 +472,16 @@ def get_manage_reports():
             "total_pendapatan": r.total_pendapatan, 
             "total_produk_terjual": r.total_produk_terjual, 
             "status": r.status,
-            "keuntungan_owner": r.keuntungan_owner, # Data baru
-            "keuntungan_superowner": r.keuntungan_superowner # Data baru
+            "keuntungan_owner": r.keuntungan_owner,
+            "keuntungan_superowner": r.keuntungan_superowner
         } for r in reports]
         return jsonify({"success": True, "reports": report_list})
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
 
-# GANTI FUNGSI LAMA DENGAN VERSI BARU INI
-# (Ganti fungsi lama di baris 908)
-# (Ganti fungsi lama di baris 908)
 @owner_bp.route('/confirm_report/<int:report_id>', methods=['POST'])
 def confirm_report(report_id):
     try:
-        # 1. Ambil owner_id yang sedang login (misal: Ata)
         data = request.json
         owner_id = data.get('owner_id')
         if not owner_id:
@@ -542,32 +496,25 @@ def confirm_report(report_id):
         if report.status == 'Terkonfirmasi': return jsonify({"success": False, "message": "Laporan ini sudah dikonfirmasi."}), 400
 
         report.status = 'Terkonfirmasi'
-        
-        # Update saldo supplier (logika ini sudah benar)
         for rincian in report.rincian_produk:
             if rincian.product.supplier and rincian.product.supplier.balance:
                 rincian.product.supplier.balance.balance += rincian.total_harga_beli
-            
-        # Hitung profit (logika ini sudah benar)
+
         total_profit = report.total_pendapatan - report.total_biaya_supplier
         keuntungan_superowner = total_profit * current_app.config['PROFIT_SHARE_SUPEROWNER_RATIO']
         keuntungan_owner = total_profit * current_app.config['PROFIT_SHARE_OWNER_RATIO']
         report.keuntungan_owner = keuntungan_owner
         report.keuntungan_superowner = keuntungan_superowner
-        
-        # 2. Ambil data 'managing_owner' (Ata) menggunakan owner_id
+
         managing_owner = Admin.query.get(owner_id) 
         
         if managing_owner and managing_owner.super_owner_id:
             super_owner_id = managing_owner.super_owner_id
-            
-            # 3. Cari SuperOwnerBalance yang cocok (milik Ata)
+
             so_balance = SuperOwnerBalance.query.filter_by(super_owner_id=super_owner_id, owner_id=managing_owner.id).first()
             if so_balance:
-                # 4a. Tambahkan profit ke saldo Ata
                 so_balance.balance += keuntungan_superowner
             else:
-                # 4b. Buat saldo baru untuk Ata
                 db.session.add(SuperOwnerBalance(super_owner_id=super_owner_id, owner_id=managing_owner.id, balance=keuntungan_superowner))
 
         db.session.commit()
@@ -577,27 +524,19 @@ def confirm_report(report_id):
         db.session.rollback()
         logging.error(f"Error confirming report: {str(e)}")
         return jsonify({"success": False, "message": f"Terjadi kesalahan server: {str(e)}"}), 500
-        
-# (Ganti fungsi lama di baris 906 dengan ini)
 
-# (Sekitar baris 964 di app.py)
 @owner_bp.route('/get_pembayaran_data', methods=['GET'])
 def get_pembayaran_data():
     try:
-        # === PERBAIKAN: Ambil owner_id dari request ===
         owner_id = request.args.get('owner_id')
         if not owner_id:
             return jsonify({"success": False, "message": "Owner ID tidak ditemukan."}), 400
-
-        # === PERBAIKAN: Filter supplier berdasarkan owner_id ===
         suppliers = Supplier.query.filter_by(owner_id=owner_id).options(joinedload(Supplier.balance)).all()
         supplier_list = []
         
         for s in suppliers:
             tanggal_tagihan_masuk = None
-            # Jika supplier punya tagihan (balance > 0)
             if s.balance and s.balance.balance > 0.01:
-                # Cari tanggal laporan terkonfirmasi paling LAMA untuk supplier ini
                 oldest_report_date = db.session.query(
                     func.min(LaporanHarian.tanggal)
                 ).select_from(LaporanHarian).\
@@ -617,7 +556,7 @@ def get_pembayaran_data():
                 "total_tagihan": s.balance.balance if s.balance else 0.0, 
                 "metode_pembayaran": s.metode_pembayaran, 
                 "nomor_rekening": s.nomor_rekening,
-                "tanggal_masuk": tanggal_tagihan_masuk # <-- DATA BARU
+                "tanggal_masuk": tanggal_tagihan_masuk
             })
         
         return jsonify({
@@ -627,7 +566,6 @@ def get_pembayaran_data():
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
 
-# --- REVISI: Hapus pemilihan metode, ambil dari data supplier ---
 @owner_bp.route('/submit_pembayaran', methods=['POST'])
 def submit_pembayaran():
     data = request.json
@@ -653,8 +591,6 @@ def submit_pembayaran():
         db.session.rollback()
         return jsonify({"success": False, "message": f"Terjadi kesalahan: {str(e)}"}), 500
 
-# (Ganti fungsi lama di baris 1009 dengan ini)
-
 @owner_bp.route('/get_all_payment_history', methods=['GET'])
 def get_all_payment_history():
     try:
@@ -662,7 +598,6 @@ def get_all_payment_history():
         end_date_str = request.args.get('end_date')
         metode = request.args.get('metode')
         
-        # === PERBAIKAN 1: Ambil owner_id ===
         owner_id = request.args.get('owner_id')
         if not owner_id:
             return jsonify({"success": False, "message": "Owner ID tidak ditemukan."}), 400
@@ -675,7 +610,6 @@ def get_all_payment_history():
 
         all_history = []
 
-        # === PERBAIKAN 2: Tambahkan JOIN dan FILTER owner_id ===
         payments_query = PembayaranSupplier.query.join(Supplier).filter(
             Supplier.owner_id == owner_id
         ).options(joinedload(PembayaranSupplier.supplier))
@@ -694,11 +628,9 @@ def get_all_payment_history():
                 "jumlah": p.jumlah_pembayaran,
                 "metode": p.metode_pembayaran,
                 "keterangan": "Tagihan Lunas",
-                "tipe": "pembayaran" # Untuk styling di frontend
+                "tipe": "pembayaran"
             })
 
-        # 2. Ambil "Tagihan Masuk" (Laporan terkonfirmasi)
-        # Filter 'metode' tidak berlaku di sini, karena ini adalah tagihan, bukan pembayaran
         tagihan_query = db.session.query(
             LaporanHarian.tanggal,
             Supplier.nama_supplier,
@@ -709,14 +641,12 @@ def get_all_payment_history():
           join(Supplier, Product.supplier_id == Supplier.id).\
           filter(LaporanHarian.status == 'Terkonfirmasi')
 
-        # === PERBAIKAN 3: Tambahkan FILTER owner_id ===
         tagihan_query = tagihan_query.filter(Supplier.owner_id == owner_id)
         if start_date:
             tagihan_query = tagihan_query.filter(LaporanHarian.tanggal >= start_date)
         if end_date:
             tagihan_query = tagihan_query.filter(LaporanHarian.tanggal <= end_date)
         
-        # Kelompokkan berdasarkan tanggal dan supplier
         tagihan_results = tagihan_query.group_by(
             LaporanHarian.tanggal, Supplier.nama_supplier
         ).having(
@@ -730,13 +660,11 @@ def get_all_payment_history():
                 "jumlah": t.total_biaya_harian,
                 "metode": "-",
                 "keterangan": "Tagihan Masuk",
-                "tipe": "tagihan" # Untuk styling di frontend
+                "tipe": "tagihan"
             })
         
-        # 3. Urutkan semua riwayat berdasarkan tanggal (terbaru dulu)
         all_history.sort(key=lambda x: x['tanggal'], reverse=True)
         
-        # 4. Ubah format tanggal menjadi string setelah diurutkan
         history_list = [
             {**item, "tanggal": item['tanggal'].strftime('%Y-%m-%d')}
             for item in all_history
@@ -754,16 +682,12 @@ def get_chart_data():
         year = int(request.args.get('year', datetime.date.today().year))
         month = int(request.args.get('month', datetime.date.today().month))
 
-        # Tentukan jumlah hari dalam bulan yang dipilih
         _, num_days = monthrange(year, month)
-        # Buat label untuk semua hari dalam bulan (misal: "1", "2", ..., "31")
         labels = [str(i) for i in range(1, num_days + 1)]
         
-        # Inisialisasi data dengan 0 untuk setiap hari
         pendapatan_data = {day: 0 for day in labels}
         biaya_data = {day: 0 for day in labels}
 
-        # 1. Ambil data pendapatan harian (dari laporan terkonfirmasi)
         pendapatan_results = db.session.query(
             func.extract('day', LaporanHarian.tanggal),
             func.sum(LaporanHarian.total_pendapatan)
@@ -776,7 +700,6 @@ def get_chart_data():
         for day, total in pendapatan_results:
             pendapatan_data[str(int(day))] = total
 
-        # 2. Ambil data biaya harian (dari pembayaran supplier)
         biaya_results = db.session.query(
             func.extract('day', PembayaranSupplier.tanggal_pembayaran),
             func.sum(PembayaranSupplier.jumlah_pembayaran)
@@ -798,36 +721,27 @@ def get_chart_data():
     except Exception as e:
         logging.error(f"Error getting chart data: {str(e)}")
         return jsonify({"success": False, "message": str(e)}), 500
-      
-# (Letakkan ini di dalam app.py, di bagian OWNER API)
-
-# (Ganti fungsi lama di baris 1073)
 
 @owner_bp.route('/finalize_reports', methods=['POST'])
 def finalize_reports():
     data = request.json
     report_ids = data.get('report_ids', [])
-    owner_id = data.get('owner_id') # Kita tetap ambil ID untuk logging
+    owner_id = data.get('owner_id')
 
     if not report_ids or not owner_id:
         return jsonify({"success": False, "message": "Data tidak lengkap."}), 400
 
     try:
-        # Ambil semua laporan yang akan difinalisasi
         reports_to_finalize = LaporanHarian.query.filter(
             LaporanHarian.id.in_(report_ids),
-            LaporanHarian.status == 'Terkonfirmasi' # <-- PERBAIKAN 1: Periksa status yang benar
+            LaporanHarian.status == 'Terkonfirmasi'
         ).all()
 
         if not reports_to_finalize:
             return jsonify({"success": False, "message": "Tidak ada laporan yang valid untuk difinalisasi."}), 400
 
-        # Loop dan ubah statusnya
         for report in reports_to_finalize:
-            report.status = 'Difinalisasi' # <-- PERBAIKAN 2: Set status baru (bukan 'Terkonfirmasi' lagi)
-
-        # PERBAIKAN 3: Hapus semua logika perhitungan profit ganda
-        
+            report.status = 'Difinalisasi'
         db.session.commit()
         
         logging.info(f"-> FINALISASI BERHASIL: {len(reports_to_finalize)} laporan dari Owner #{owner_id} telah ditandai 'Difinalisasi'.")

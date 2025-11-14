@@ -1,4 +1,3 @@
-# import dari library luar milik python
 from flask import Blueprint, jsonify, current_app, request
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql import func
@@ -6,7 +5,6 @@ from sqlalchemy.orm import joinedload
 import datetime
 import logging
 
-# import dari repo internal (lokal)
 from app import db
 from app.models import (
   Admin, Lapak, Supplier, Product, LaporanHarian, LaporanHarianProduk, SupplierBalance, SuperOwnerBalance, PembayaranSupplier, RiwayatPenarikanSuperOwner
@@ -17,26 +15,21 @@ superowner_bp = Blueprint('superowner', __name__, url_prefix='/api/superowner')
 @superowner_bp.route('/get_superowner_dashboard_data/<int:superowner_id>', methods=['GET'])
 def get_superowner_dashboard_data(superowner_id):
     try:
-        # 1. Ambil SEMUA owner dari tabel Admin
         all_owners = Admin.query.filter_by(super_owner_id=superowner_id).all()
         
-        # 2. Ambil semua data saldo yang ada
         all_balances = SuperOwnerBalance.query.filter_by(super_owner_id=superowner_id).all()
         balance_map = {b.owner_id: b.balance for b in all_balances}
 
-        # 3. Buat rincian tabel
         rincian_per_owner = []
         for owner in all_owners:
             current_balance = balance_map.get(owner.id, 0.0) 
             rincian_per_owner.append({
                 "owner_id": owner.id, 
                 "owner_name": owner.nama_lengkap, 
-                "balance": current_balance # Ini adalah Saldo Saat Ini
             })
         
         total_saldo_profit = sum(b['balance'] for b in rincian_per_owner)
 
-        # 4. Hitung "Profit Bulan Ini"
         today = datetime.date.today()
         start_of_month = today.replace(day=1)
         profit_bulan_ini = db.session.query(func.sum(LaporanHarian.keuntungan_superowner))\
@@ -48,15 +41,13 @@ def get_superowner_dashboard_data(superowner_id):
                 LaporanHarian.status.in_(['Terkonfirmasi', 'Difinalisasi'])
             ).scalar() or 0
 
-        # 5. Hitung "Owner Terprofit"
         owner_terprofit = "Belum Ada" 
         
         if rincian_per_owner:
-            # Cari Owner Terprofit berdasarkan 'balance' (Saldo Saat Ini) dari tabel
             top_owner = max(rincian_per_owner, key=lambda o: o['balance'])
             
-            if top_owner['balance'] > 0:
-                owner_terprofit = top_owner['owner_name']
+        if top_owner['balance'] > 0:
+            owner_terprofit = top_owner['owner_name']
         
         return jsonify({
             "success": True, 
@@ -69,19 +60,14 @@ def get_superowner_dashboard_data(superowner_id):
         })
     except Exception as e:
         db.session.rollback()
-        # Baris ini yang mengirim error ke konsol Anda
         logging.error(f"Error getting SO dashboard data: {str(e)}")
         return jsonify({"success": False, "message": f"Gagal mengambil data dashboard: {str(e)}"}), 500
 
-
-# (Ganti fungsi lama di baris 1540)
-# (Ganti fungsi lama di baris 1540)
 @superowner_bp.route('/get_superowner_profit_details/<int:owner_id>', methods=['GET'])
 def get_superowner_profit_details(owner_id):
     try:
-        # Query ini mencari semua laporan terkonfirmasi yang menghasilkan profit
         profit_history = db.session.query(
-            LaporanHarian.id, # <-- 1. TAMBAHKAN 'LaporanHarian.id' DI SINI
+            LaporanHarian.id,
             LaporanHarian.tanggal,
             Lapak.lokasi,
             LaporanHarian.keuntungan_superowner
@@ -93,7 +79,7 @@ def get_superowner_profit_details(owner_id):
         ).order_by(LaporanHarian.tanggal.desc()).all()
 
         history_list = [{
-            "report_id": item.id, # <-- 2. SEKARANG 'item.id' BERISI DATA
+            "report_id": item.id,
             "tanggal": item.tanggal.strftime('%d %B %Y'),
             "sumber": f"Laporan dari {item.lokasi}",
             "profit": item.keuntungan_superowner
@@ -105,8 +91,6 @@ def get_superowner_profit_details(owner_id):
         db.session.rollback()
         logging.error(f"Error getting superowner profit details: {str(e)}")
         return jsonify({"success": False, "message": "Gagal mengambil detail profit."}), 500
-      
-# (Tambahkan fungsi BARU ini di app.py, di bagian SUPEROWNER API)
 
 @superowner_bp.route('/get_superowner_report_profit_detail/<int:report_id>')
 def get_superowner_report_profit_detail(report_id):
@@ -118,7 +102,6 @@ def get_superowner_report_profit_detail(report_id):
         if not report:
             return jsonify({"success": False, "message": "Laporan tidak ditemukan"}), 404
 
-        # Kirim data yang sudah disederhanakan
         data = {
             "id": report.id,
             "tanggal": report.tanggal.strftime('%d %B %Y'),
@@ -132,7 +115,6 @@ def get_superowner_report_profit_detail(report_id):
     except Exception as e:
         logging.error(f"Error getting SO profit detail: {str(e)}")
         return jsonify({"success": False, "message": "Terjadi kesalahan server"}), 500
-# (Letakkan ini setelah fungsi 'get_superowner_profit_details')
 
 @superowner_bp.route('/superowner_withdraw', methods=['POST'])
 def superowner_withdraw():
@@ -146,14 +128,12 @@ def superowner_withdraw():
         if total_penarikan <= 0:
             return jsonify({"success": False, "message": "Tidak ada saldo untuk ditarik."}), 400
 
-        # Catat transaksi penarikan
         penarikan = RiwayatPenarikanSuperOwner(
             super_owner_id=superowner_id,
             jumlah_penarikan=total_penarikan
         )
         db.session.add(penarikan)
-
-        # Reset saldo semua owner terkait menjadi 0
+        
         for b in balances:
             b.balance = 0.0
         
@@ -164,19 +144,16 @@ def superowner_withdraw():
         db.session.rollback()
         return jsonify({"success": False, "message": "Gagal memproses penarikan."}), 500
 
-# (Letakkan ini di dalam app.py, di bagian SUPEROWNER API)
-
 @superowner_bp.route('/superowner_withdraw_from_owner', methods=['POST'])
 def superowner_withdraw_from_owner():
     data = request.json
     superowner_id = data.get('superowner_id')
-    owner_id = data.get('owner_id') # ID owner yang saldonya ditarik
+    owner_id = data.get('owner_id')
 
     if not superowner_id or not owner_id:
         return jsonify({"success": False, "message": "ID Superowner atau Owner tidak lengkap."}), 400
 
     try:
-        # 1. Cari catatan saldo spesifik
         balance_record = SuperOwnerBalance.query.filter_by(
             super_owner_id=superowner_id,
             owner_id=owner_id
@@ -187,15 +164,13 @@ def superowner_withdraw_from_owner():
 
         jumlah_penarikan = balance_record.balance
 
-        # 2. Catat di riwayat, sekarang DENGAN owner_id
         penarikan = RiwayatPenarikanSuperOwner(
             super_owner_id=superowner_id,
-            owner_id=owner_id, # <-- Ini bagian penting untuk pencatatan
+            owner_id=owner_id,
             jumlah_penarikan=jumlah_penarikan
         )
         db.session.add(penarikan)
 
-        # 3. Reset saldo owner tersebut menjadi 0
         balance_record.balance = 0.0
         
         db.session.commit()
@@ -207,12 +182,9 @@ def superowner_withdraw_from_owner():
         db.session.rollback()
         return jsonify({"success": False, "message": "Gagal memproses penarikan."}), 500
       
-# GANTI FUNGSI LAMA DENGAN VERSI BARU INI
 @superowner_bp.route('/get_superowner_profit_reports/<int:superowner_id>', methods=['GET'])
 def get_superowner_profit_reports(superowner_id):
     try:
-        # === LOGIKA BARU UNTUK MENGAMBIL LAPORAN ===
-        # Query ini sekarang langsung mencari semua laporan yang menghasilkan profit untuk Superowner
         reports = db.session.query(
             LaporanHarian.id, LaporanHarian.tanggal, Lapak.lokasi,
             Admin.nama_lengkap.label('owner_name'), LaporanHarian.keuntungan_superowner
@@ -222,7 +194,6 @@ def get_superowner_profit_reports(superowner_id):
             LaporanHarian.status == 'Terkonfirmasi',
             LaporanHarian.keuntungan_superowner > 0
         ).order_by(LaporanHarian.tanggal.desc()).all()
-        # === AKHIR PERBAIKAN ===
 
         report_list = [{
             "report_id": r.id, "tanggal": r.tanggal.strftime('%d %B %Y'),
@@ -233,11 +204,6 @@ def get_superowner_profit_reports(superowner_id):
     except Exception as e:
         return jsonify({"success": False, "message": "Gagal mengambil laporan profit."}), 500
 
-# (Letakkan ini setelah fungsi get_superowner_profit_reports)
-
-# (Ganti fungsi lama di baris 1630 dengan ini)
-
-# (Ganti fungsi lama di baris 1630)
 @superowner_bp.route('/get_superowner_transactions/<int:superowner_id>', methods=['GET'])
 def get_superowner_transactions(superowner_id):
     try:
@@ -252,8 +218,6 @@ def get_superowner_transactions(superowner_id):
 
         all_transactions = []
 
-        # 1. Ambil "Profit Masuk" (Laporan terkonfirmasi)
-        # Kita kelompokkan berdasarkan hari dan owner
         profit_query = db.session.query(
             LaporanHarian.tanggal,
             Admin.nama_lengkap.label('owner_name'),
@@ -281,13 +245,11 @@ def get_superowner_transactions(superowner_id):
                 "jumlah": p.total_profit
             })
 
-        # 2. Ambil "Penarikan Keluar" (Penandaan Lunas)
         payout_query = RiwayatPenarikanSuperOwner.query.options(
             joinedload(RiwayatPenarikanSuperOwner.owner)
         ).filter(RiwayatPenarikanSuperOwner.super_owner_id == superowner_id)
         
         if start_date:
-            # Riwayat penarikan menggunakan DateTime, jadi kita perlu konversi
             payout_query = payout_query.filter(func.date(RiwayatPenarikanSuperOwner.tanggal_penarikan) >= start_date)
         if end_date:
             payout_query = payout_query.filter(func.date(RiwayatPenarikanSuperOwner.tanggal_penarikan) <= end_date)
@@ -296,16 +258,14 @@ def get_superowner_transactions(superowner_id):
 
         for h in payouts:
             all_transactions.append({
-                "tanggal": h.tanggal_penarikan.date(), # Ambil tanggalnya saja untuk pengurutan
+                "tanggal": h.tanggal_penarikan.date(),
                 "keterangan": f"Penarikan dari {h.owner.nama_lengkap if h.owner else 'Saldo Global'}",
                 "tipe": "penarikan",
-                "jumlah": -h.jumlah_penarikan # Buat jadi negatif
+                "jumlah": -h.jumlah_penarikan
             })
-
-        # 3. Urutkan semua transaksi berdasarkan tanggal (terbaru dulu)
+            
         all_transactions.sort(key=lambda x: x['tanggal'], reverse=True)
         
-        # 4. Ubah format tanggal menjadi string setelah diurutkan
         tx_list = [
             {**item, "tanggal": item['tanggal'].strftime('%Y-%m-%d')}
             for item in all_transactions
@@ -316,14 +276,10 @@ def get_superowner_transactions(superowner_id):
         db.session.rollback()
         logging.error(f"Error getting superowner transactions: {str(e)}")
         return jsonify({"success": False, "message": "Gagal mengambil riwayat transaksi."}), 500
-            
-# (Letakkan ini di dalam file app.py, di bagian SUPEROWNER API)
 
-# (Ganti fungsi lama di baris 1656)
 @superowner_bp.route('/get_superowner_owner_reports/<int:superowner_id>', methods=['GET'])
 def get_superowner_owner_reports(superowner_id):
     try:
-        # Ambil parameter tanggal dari request
         start_date_str = request.args.get('start_date')
         end_date_str = request.args.get('end_date')
 
@@ -342,14 +298,12 @@ def get_superowner_owner_reports(superowner_id):
             lapak_names = [l.lokasi for l in lapaks]
 
             if not lapak_ids:
-                # (Bagian ini tidak berubah, data owner kosong tetap sama)
                 owner_reports.append({
                     "owner_id": owner.id, "owner_name": owner.nama_lengkap, "lapak_names": [],
                     "total_biaya_supplier": 0, "total_keuntungan_owner": 0, "total_keuntungan_superowner": 0
                 })
                 continue
 
-            # === PERUBAHAN DI SINI: Terapkan filter tanggal ke query agregat ===
             query = db.session.query(
                 func.sum(LaporanHarian.total_biaya_supplier).label('total_biaya'),
                 func.sum(LaporanHarian.keuntungan_owner).label('total_profit_owner'),
@@ -359,14 +313,12 @@ def get_superowner_owner_reports(superowner_id):
                 LaporanHarian.status == 'Terkonfirmasi'
             )
             
-            # Tambahkan filter tanggal jika ada
             if start_date:
                 query = query.filter(LaporanHarian.tanggal >= start_date)
             if end_date:
                 query = query.filter(LaporanHarian.tanggal <= end_date)
 
             aggregated_data = query.first()
-            # === AKHIR PERUBAHAN ===
 
             owner_reports.append({
                 "owner_id": owner.id, "owner_name": owner.nama_lengkap, "lapak_names": lapak_names,
@@ -382,12 +334,9 @@ def get_superowner_owner_reports(superowner_id):
         logging.error(f"Error getting superowner aggregated reports: {str(e)}")
         return jsonify({"success": False, "message": "Gagal mengambil laporan agregat owner."}), 500
 
-# (Letakkan ini di dalam file app.py, di bagian SUPEROWNER API)
-
 @superowner_bp.route('/get_superowner_owners/<int:superowner_id>', methods=['GET'])
 def get_superowner_owners(superowner_id):
     try:
-        # Ambil semua admin yang terhubung ke superowner ini
         owners = Admin.query.filter_by(super_owner_id=superowner_id).all()
         owner_list = [{
             "id": o.id,
@@ -401,9 +350,6 @@ def get_superowner_owners(superowner_id):
     except Exception as e:
         return jsonify({"success": False, "message": "Gagal mengambil data owner."}), 500
 
-# (Ganti fungsi lama di baris 1756)
-# (Ganti fungsi lama yang sederhana di baris 1756 dengan versi LENGKAP ini)
-
 @superowner_bp.route('/get_report_details/<int:report_id>')
 def get_report_details(report_id):
     try:
@@ -415,8 +361,6 @@ def get_report_details(report_id):
         if not report:
             return jsonify({"success": False, "message": "Laporan tidak ditemukan"}), 404
 
-        # --- INI ADALAH LOGIKA LAMA YANG KITA PULIHKAN ---
-        # Mengelompokkan produk berdasarkan supplier
         rincian_per_supplier = {}
         for item in report.rincian_produk:
             supplier_name = item.product.supplier.nama_supplier if item.product.supplier else "Produk Manual"
@@ -432,7 +376,6 @@ def get_report_details(report_id):
                 "harga_jual": item.product.harga_jual,
                 "total_pendapatan": item.total_harga_jual,
             })
-        # --- AKHIR LOGIKA YANG DIPULIHKAN ---
 
         data = {
             "id": report.id,
@@ -440,7 +383,7 @@ def get_report_details(report_id):
             "status": report.status,
             "lokasi": report.lapak.lokasi,
             "penanggung_jawab": report.lapak.penanggung_jawab.nama_lengkap,
-            "rincian_per_supplier": rincian_per_supplier, # <--- Data ini sekarang ada lagi
+            "rincian_per_supplier": rincian_per_supplier,
             "rekap_otomatis": {
                 "terjual_cash": report.pendapatan_cash,
                 "terjual_qris": report.pendapatan_qris,

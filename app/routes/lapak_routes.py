@@ -12,12 +12,9 @@ from app.models import (
 
 lapak_bp = Blueprint('lapak', __name__, url_prefix='/api/lapak')
 
-# --- LAPAK API ---
-# GANTI FUNGSI LAMA DENGAN VERSI BARU INI
 @lapak_bp.route('/get_data_buat_catatan/<int:lapak_id>', methods=['GET'])
 def get_data_buat_catatan(lapak_id):
     today = datetime.date.today()
-    # Pengecekan laporan yang sudah ada tetap berlaku
     if LaporanHarian.query.filter_by(lapak_id=lapak_id, tanggal=today).first():
         return jsonify({"success": False, "message": "Laporan untuk hari ini sudah dibuat.", "already_exists": True}), 409
     
@@ -25,7 +22,6 @@ def get_data_buat_catatan(lapak_id):
     if not lapak:
         return jsonify({"success": False, "message": "Lapak tidak ditemukan."}), 404
       
-    # Ambil SEMUA supplier beserta produk mereka
     all_suppliers = Supplier.query.filter_by(owner_id=lapak.owner_id).options(joinedload(Supplier.products)).order_by(Supplier.nama_supplier).all()
     
     suppliers_data = []
@@ -33,9 +29,7 @@ def get_data_buat_catatan(lapak_id):
         suppliers_data.append({
             "id": s.id,
             "name": s.nama_supplier,
-            # === PERBAIKAN UTAMA ADA DI SINI ===
-            "metode_pembayaran": s.metode_pembayaran, # Tambahkan baris ini
-            # =====================================
+            "metode_pembayaran": s.metode_pembayaran,
             "products": [{
                 "id": p.id,
                 "name": p.nama_produk,
@@ -123,27 +117,23 @@ def add_manual_product():
     data = request.json
     product_name = data.get('nama_produk')
     supplier_id = data.get('supplier_id')
-    lapak_id = data.get('lapak_id') # Kita ambil lapak_id juga
+    lapak_id = data.get('lapak_id')
 
     if not all([product_name, supplier_id, lapak_id]):
         return jsonify({"success": False, "message": "Data tidak lengkap."}), 400
 
     try:
-        # Cek apakah produk dengan nama yang sama sudah ada untuk supplier ini
         existing_product = Product.query.filter_by(nama_produk=product_name, supplier_id=supplier_id).first()
         if existing_product:
             return jsonify({"success": False, "message": "Produk dengan nama ini sudah ada untuk supplier tersebut."}), 409
-
-        # Buat produk baru
         new_product = Product(
             nama_produk=product_name,
             supplier_id=supplier_id,
             harga_beli=current_app.config['HARGA_BELI_DEFAULT'],
             harga_jual=current_app.config['HARGA_JUAL_DEFAULT'],
-            is_manual=True # Tandai sebagai produk manual
+            is_manual=True
         )
         
-        # Alokasikan produk ini ke lapak yang menambahkannya
         lapak = Lapak.query.get(lapak_id)
         if lapak:
             new_product.lapaks.append(lapak)
@@ -151,7 +141,6 @@ def add_manual_product():
         db.session.add(new_product)
         db.session.commit()
 
-        # Kirim kembali data produk yang baru dibuat agar bisa di-update di frontend
         product_data = {
             "id": new_product.id,
             "name": new_product.nama_produk,
@@ -167,9 +156,6 @@ def add_manual_product():
         logging.error(f"Error adding manual product: {str(e)}")
         return jsonify({"success": False, "message": "Terjadi kesalahan server."}), 500
 
-# (Letakkan ini di dalam file app.py, di bagian LAPAK API)
-
-# GANTI FUNGSI LAMA DENGAN VERSI BARU INI
 @lapak_bp.route('/notify_supplier', methods=['POST'])
 def notify_supplier():
     data = request.json
@@ -179,16 +165,13 @@ def notify_supplier():
     product = Product.query.get(product_id)
     lapak = Lapak.query.get(lapak_id)
 
-    # Validasi input
     if not all([product, lapak]):
         return jsonify({"success": False, "message": "Data produk atau lapak tidak valid."}), 404
     
-    # Pastikan produk memiliki supplier
     if not product.supplier_id:
         return jsonify({"success": False, "message": "Produk ini tidak terhubung ke supplier manapun."}), 400
 
     try:
-        # Buat entri notifikasi baru di database
         notifikasi_baru = Notifikasi(
             product_id=product.id,
             lapak_id=lapak.id,
@@ -197,7 +180,6 @@ def notify_supplier():
         db.session.add(notifikasi_baru)
         db.session.commit()
 
-        # Cetak ke terminal (untuk debugging)
         logging.info(f"-> NOTIFIKASI TERSIMPAN: Stok produk '{product.nama_produk}' habis di '{lapak.lokasi}'.")
 
         return jsonify({"success": True, "message": "Notifikasi berhasil dikirim."})
