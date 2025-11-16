@@ -189,8 +189,9 @@ def get_superowner_profit_reports(superowner_id):
             LaporanHarian.id, LaporanHarian.tanggal, Lapak.lokasi,
             Admin.nama_lengkap.label('owner_name'), LaporanHarian.keuntungan_superowner
         ).join(Lapak, LaporanHarian.lapak_id == Lapak.id)\
-         .join(Admin, Lapak.user_id == Admin.id)\
+         .join(Admin, Lapak.owner_id == Admin.id)\
          .filter(
+            Admin.super_owner_id == superowner_id,
             LaporanHarian.status == 'Terkonfirmasi',
             LaporanHarian.keuntungan_superowner > 0
         ).order_by(LaporanHarian.tanggal.desc()).all()

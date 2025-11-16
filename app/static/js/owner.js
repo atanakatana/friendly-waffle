@@ -48,7 +48,7 @@ async function fetchAndDrawCharts() {
   const year = document.getElementById('chart-year-select').value;
 
   try {
-    const resp = await fetch(`/api/get_chart_data?month=${month}&year=${year}`);
+    const resp = await fetch(`/api/owner/get_chart_data?month=${month}&year=${year}`);
     const result = await resp.json();
     if (!result.success) throw new Error(result.message);
 
@@ -165,7 +165,7 @@ async function fetchAndDisplayOwnerSupplierHistory() {
   const queryString = params.toString();
 
   try {
-    const apiUrl = `/api/get_owner_supplier_history/${supplierId}?${queryString}`;
+    const apiUrl = `/api/owner/get_owner_supplier_history/${supplierId}?${queryString}`;
     const resp = await fetch(apiUrl);
     const result = await resp.json();
     if (!result.success) throw new Error(result.message);
@@ -189,7 +189,7 @@ async function populateOwnerDashboard() {
   try {
     // PERBAIKAN DI SINI: Kirim ID Owner yang sedang login
     const ownerId = AppState.currentUser.user_info.id;
-    const dataResp = await fetch(`/api/get_data_owner/${ownerId}`);
+    const dataResp = await fetch(`/api/owner/get_data_owner/${ownerId}`);
 
     if (!dataResp.ok) throw new Error("Gagal mengambil data owner");
     AppState.ownerData = await dataResp.json();
@@ -244,7 +244,7 @@ async function showReportDetails(reportId) {
   container.innerHTML = `<div class="text-center p-5"><div class="spinner-border"></div></div>`;
   modals.reportDetail.show();
   try {
-    const resp = await fetch(`/api/get_report_details/${reportId}`);
+    const resp = await fetch(`/api/superowner/get_report_details/${reportId}`);
     const result = await resp.json();
     if (!result.success) throw new Error(result.message);
 
@@ -365,7 +365,7 @@ async function populateLaporanPendapatan() {
   accordionEl.innerHTML = `<div class="text-center p-5"><div class="spinner-border text-primary"></div></div>`;
   try {
     const resp = await fetch(
-      `/api/get_laporan_pendapatan_harian?date=${date}`
+      `/api/owner/get_laporan_pendapatan_harian?date=${date}`
     );
     if (!resp.ok) throw new Error("Gagal mengambil data");
     const data = await resp.json();
@@ -403,7 +403,7 @@ async function populateLaporanBiaya() {
   accordionEl.innerHTML = `<div class="text-center p-5"><div class="spinner-border text-warning"></div></div>`;
   try {
     const resp = await fetch(
-      `/api/get_laporan_biaya_harian?date=${date}`
+      `/api/owner/get_laporan_biaya_harian?date=${date}`
     );
     if (!resp.ok) throw new Error("Gagal mengambil data");
     const data = await resp.json();
@@ -490,7 +490,7 @@ async function populateManageReportsPage() {
   // === LOGIKA FILTER BARU SELESAI ===
 
   try {
-    const resp = await fetch(`/api/get_manage_reports?${params.toString()}`);
+    const resp = await fetch(`/api/owner/get_manage_reports?${params.toString()}`);
     const result = await resp.json();
     // (Sisa dari fungsi ini (try...catch...finally) tetap sama seperti file Anda)
     if (result.success) {
@@ -538,7 +538,7 @@ async function confirmReport(reportId) {
   try {
     // === PERBAIKAN DI SINI: Kirim ID Owner ===
     const ownerId = AppState.currentUser.user_info.id;
-    const resp = await fetch(`/api/confirm_report/${reportId}`, {
+    const resp = await fetch(`/api/owner/confirm_report/${reportId}`, {
       method: "POST",
       // Tambahkan body yang mengirim owner_id
       headers: { "Content-Type": "application/json" },
@@ -637,7 +637,7 @@ async function openEditModal(type, id = null) {
       // Dapatkan nomor register baru untuk supplier baru
       // REVISI: Kirim ID Owner yang sedang login
       const ownerId = AppState.currentUser.user_info.id;
-      const resp = await fetch(`/api/get_next_supplier_reg_number/${ownerId}`);
+      const resp = await fetch(`/api/owner/get_next_supplier_reg_number/${ownerId}`);
 
       const result = await resp.json();
       document.getElementById("edit-supplier-register").value = result.reg_number;
@@ -652,7 +652,7 @@ async function handleFormSubmit(type, e) {
   const form = e.target;
   const id = form.querySelector(`input[type=hidden]`).value;
   const isEdit = id !== "";
-  let url = isEdit ? `/api/update_${type}/${id}` : `/api/add_${type}`;
+  let url = isEdit ? `/api/owner/update_${type}/${id}` : `/api/owner/add_${type}`;
   let method = isEdit ? "PUT" : "POST";
   let payload = {};
   if (type === "admin") {
@@ -721,7 +721,7 @@ async function handleDelete(type, id) {
     )
   )
     return;
-  const resp = await fetch(`/api/delete_${type}/${id}`, {
+  const resp = await fetch(`/api/owner/delete_${type}/${id}`, {
     method: "DELETE",
   });
   const result = await resp.json();
@@ -739,7 +739,7 @@ async function populateVerificationCenter() {
 
   try {
     const ownerId = AppState.currentUser.user_info.id;
-    const resp = await fetch(`/api/get_owner_verification_reports/${ownerId}`);
+    const resp = await fetch(`/api/owner/get_owner_verification_reports/${ownerId}`);
     const result = await resp.json();
     if (!result.success) throw new Error(result.message);
 
@@ -787,7 +787,7 @@ async function handleFinalizeReports() {
 
   try {
     const ownerId = AppState.currentUser.user_info.id;
-    const resp = await fetch('/api/finalize_reports', {
+    const resp = await fetch('/api/owner/finalize_reports', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ report_ids: reportIds, owner_id: ownerId })
@@ -820,7 +820,7 @@ async function populatePembayaranPage() {
   try {
     // === PERBAIKAN: Kirim owner_id ===
     const ownerId = AppState.currentUser.user_info.id;
-    const resp = await fetch(`/api/get_pembayaran_data?owner_id=${ownerId}`);
+    const resp = await fetch(`/api/owner/get_pembayaran_data?owner_id=${ownerId}`);
     const result = await resp.json();
     if (!result.success) throw new Error(result.message);
 
@@ -918,7 +918,7 @@ async function populatePaymentHistory() {
   if (endDate) params.append('end_date', endDate);
 
   try {
-    const resp = await fetch(`/api/get_all_payment_history?${params.toString()}`);
+    const resp = await fetch(`/api/owner/get_all_payment_history?${params.toString()}`);
     const result = await resp.json();
     if (!result.success) throw new Error(result.message);
 
@@ -979,7 +979,7 @@ async function handlePaymentSubmit(e) {
     jumlah_pembayaran: document.getElementById("payment-supplier-amount")
       .value,
   };
-  const resp = await fetch("/api/submit_pembayaran", {
+  const resp = await fetch("/api/owner/submit_pembayaran", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),

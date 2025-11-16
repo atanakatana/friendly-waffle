@@ -3,7 +3,7 @@
 async function populateSupplierDashboard() {
   try {
     const supplierId = AppState.currentUser.user_info.supplier_id;
-    const resp = await fetch(`/api/get_data_supplier/${supplierId}`);
+    const resp = await fetch(`/api/supplier/get_data_supplier/${supplierId}`);
     if (!resp.ok) throw new Error("Gagal mengambil data dashboard supplier");
     const result = await resp.json();
     if (result.success) {
@@ -40,7 +40,7 @@ async function populateSupplierHistoryPage() {
   const queryString = params.toString();
 
   try {
-    const apiUrl = `/api/get_supplier_history/${AppState.currentUser.user_info.supplier_id}?${queryString}`;
+    const apiUrl = `/api/supplier/get_supplier_history/${AppState.currentUser.user_info.supplier_id}?${queryString}`;
     const resp = await fetch(apiUrl);
     const result = await resp.json();
 
@@ -95,7 +95,7 @@ async function populateNotifications() {
 
   try {
     const supplierId = AppState.currentUser.user_info.supplier_id;
-    const resp = await fetch(`/api/get_supplier_notifications/${supplierId}`);
+    const resp = await fetch(`/api/supplier/get_supplier_notifications/${supplierId}`);
     const result = await resp.json();
     if (!result.success) throw new Error(result.message);
 
@@ -138,7 +138,7 @@ async function populateNotifications() {
 // FUNGSI BARU 1: Untuk mengubah status di backend
 async function updateNotificationStatus(id, status) {
   try {
-    const resp = await fetch(`/api/update_notification_status/${id}`, {
+    const resp = await fetch(`/api/supplier/update_notification_status/${id}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: status })
@@ -193,7 +193,7 @@ async function populateArchivedNotifications() {
 
   try {
     const supplierId = AppState.currentUser.user_info.supplier_id;
-    const resp = await fetch(`/api/get_archived_notifications/${supplierId}`);
+    const resp = await fetch(`/api/supplier/get_archived_notifications/${supplierId}`);
     const result = await resp.json();
 
     if (!result.success) throw new Error(result.message);

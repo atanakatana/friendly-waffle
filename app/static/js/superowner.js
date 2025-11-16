@@ -1,7 +1,4 @@
 // --- SUPEROWNER FUNCTIONS ---
-// GANTI FUNGSI LAMA DENGAN VERSI BARU INI
-// (Ganti fungsi lama di baris 2200)
-// (Ganti fungsi lama di baris 2200 di index.html)
 
 async function populateSuperownerDashboard() {
   const loadingEl = document.getElementById('superowner-loading');
@@ -16,7 +13,7 @@ async function populateSuperownerDashboard() {
 
   try {
     const superownerId = AppState.currentUser.user_info.id;
-    const resp = await fetch(`/api/get_superowner_dashboard_data/${superownerId}`);
+    const resp = await fetch(`/api/superowner/get_superowner_dashboard_data/${superownerId}`);
     const result = await resp.json();
     if (!result.success) throw new Error(result.message);
 
@@ -81,7 +78,7 @@ async function populateSuperownerProfitDetails() {
   contentEl.style.display = 'none';
 
   try {
-    const resp = await fetch(`/api/get_superowner_profit_details/${id}`);
+    const resp = await fetch(`/api/superowner/get_superowner_profit_details/${id}`);
     const result = await resp.json();
 
     if (!result.success) throw new Error(result.message);
@@ -122,7 +119,7 @@ async function showSuperOwnerProfitModal(reportId) {
 
   try {
     // Panggil API BARU yang kita buat
-    const resp = await fetch(`/api/get_superowner_report_profit_detail/${reportId}`);
+    const resp = await fetch(`/superowner/get_superowner_report_profit_detail/${reportId}`);
     const result = await resp.json();
     if (!result.success) throw new Error(result.message);
 
@@ -192,7 +189,7 @@ async function handleSuperownerWithdrawForOwner() {
   const ownerId = document.getElementById('withdraw-owner-id').value; // <-- Ambil ID
 
   try {
-    const resp = await fetch('/api/superowner_withdraw_from_owner', { // <-- Panggil API baru
+    const resp = await fetch('/superowner/superowner_withdraw_from_owner', { // <-- Panggil API baru
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ superowner_id: superownerId, owner_id: ownerId }) // <-- Kirim kedua ID
@@ -230,7 +227,7 @@ async function populateSuperownerReports() {
     // === AKHIR LOGIKA BARU ===
 
     // 1. PANGGIL API BARU KITA DENGAN PARAMETER
-    const resp = await fetch(`/api/get_superowner_owner_reports/${superownerId}?${params.toString()}`);
+    const resp = await fetch(`/api/superowner/get_superowner_owner_reports/${superownerId}?${params.toString()}`);
     const result = await resp.json();
     if (!result.success) throw new Error(result.message);
 
@@ -328,7 +325,7 @@ async function populateSuperownerTransactions() {
 
   try {
     const superownerId = AppState.currentUser.user_info.id;
-    const resp = await fetch(`/api/get_superowner_transactions/${superownerId}?${params.toString()}`);
+    const resp = await fetch(`/superowner/get_superowner_transactions/${superownerId}?${params.toString()}`);
     const result = await resp.json();
 
     if (!result.success) throw new Error(result.message);
@@ -370,7 +367,7 @@ async function populateSuperownerManageOwners() {
   tableBody.innerHTML = `<tr><td colspan="6" class="text-center"><div class="spinner-border spinner-border-sm"></div></td></tr>`;
   try {
     const superownerId = AppState.currentUser.user_info.id;
-    const resp = await fetch(`/api/get_superowner_owners/${superownerId}`);
+    const resp = await fetch(`/api/superowner/get_superowner_owners/${superownerId}`);
     const result = await resp.json();
     if (!result.success) throw new Error(result.message);
     if (result.owners.length === 0) {
@@ -402,7 +399,7 @@ async function openSuperownerEditOwnerModal(id = null) {
   if (isEdit) {
     // Logika untuk Mode EDIT
     const superownerId = AppState.currentUser.user_info.id;
-    const resp = await fetch(`/api/get_superowner_owners/${superownerId}`);
+    const resp = await fetch(`/api/superowner/get_superowner_owners/${superownerId}`);
     const result = await resp.json();
     const ownerData = result.owners.find(o => o.id === id);
     if (ownerData) {
@@ -424,7 +421,7 @@ async function handleSuperownerOwnerFormSubmit(e) {
   const form = e.target;
   const id = form.elements["superowner-edit-owner-id"].value;
   const isEdit = id !== "";
-  const url = isEdit ? `/api/update_admin/${id}` : `/api/add_admin`;
+  const url = isEdit ? `/api/owner/update_admin/${id}` : `/api/owner/add_admin`;
   const method = isEdit ? "PUT" : "POST";
   const password = form.elements["superowner-edit-owner-password"].value;
   const passwordConfirm = form.elements["superowner-edit-owner-password-confirm"].value;
@@ -451,7 +448,7 @@ async function handleSuperownerOwnerFormSubmit(e) {
 // FUNGSI BARU 4: Untuk menghapus Owner
 async function handleSuperownerDeleteOwner(id) {
   if (!confirm("Yakin ingin menghapus Owner ini?")) return;
-  const resp = await fetch(`/api/delete_admin/${id}`, { method: 'DELETE' });
+  const resp = await fetch(`/api/owner/delete_admin/${id}`, { method: 'DELETE' });
   const result = await resp.json();
   showToast(result.message, resp.ok);
   if (resp.ok) await populateSuperownerManageOwners();

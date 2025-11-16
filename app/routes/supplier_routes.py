@@ -67,8 +67,18 @@ def get_supplier_history(supplier_id):
         sales = sales_query.order_by(LaporanHarian.tanggal.desc(), Lapak.lokasi).all()
         sales_list = [{"tanggal": s.tanggal.strftime('%Y-%m-%d'), "lokasi": s.lokasi, "nama_produk": s.nama_produk, "terjual": s.jumlah_terjual} for s in sales]
         
-        all_lapaks = Lapak.query.order_by(Lapak.lokasi).all()
-        lapak_list = [{"id": l.id, "lokasi": l.lokasi} for l in all_lapaks]
+        # Mengambil hanya lapak yang relevan (pernah menjual produk dari supplier ini)
+        relevant_lapaks_query = db.session.query(
+            Lapak.id, Lapak.lokasi
+        ).join(LaporanHarian, LaporanHarian.lapak_id == Lapak.id)\
+         .join(LaporanHarianProduk, LaporanHarianProduk.laporan_id == LaporanHarian.id)\
+         .join(Product, Product.id == LaporanHarianProduk.product_id)\
+         .filter(Product.supplier_id == supplier_id)\
+         .distinct()\
+         .order_by(Lapak.lokasi)
+        
+        relevant_lapaks = relevant_lapaks_query.all()
+        lapak_list = [{"id": l.id, "lokasi": l.lokasi} for l in relevant_lapaks]
         
         return jsonify({"success": True, "payments": payment_list, "sales": sales_list, "lapaks": lapak_list})
     except Exception as e:

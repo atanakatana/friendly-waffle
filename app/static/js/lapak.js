@@ -17,7 +17,7 @@ async function openAturProdukModal() {
   modals.aturProduk.show();
 
   try {
-    const resp = await fetch(`/api/get_data_buat_catatan/${AppState.currentUser.user_info.lapak_id}`);
+    const resp = await fetch(`/api/lapak/get_data_buat_catatan/${AppState.currentUser.user_info.lapak_id}`);
     const result = await resp.json();
     if (!result.success) {
       if (result.already_exists) {
@@ -118,7 +118,7 @@ async function handleAddNewProduct(e) {
   submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
 
   try {
-    const resp = await fetch('/api/add_manual_product_to_supplier', {
+    const resp = await fetch('/api/lapak/add_manual_product_to_supplier', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -273,7 +273,7 @@ async function populateLapakDashboard() {
   try {
     // API dipanggil untuk mengecek apakah laporan hari ini sudah ada
     const resp = await fetch(
-      `/api/get_data_buat_catatan/${AppState.currentUser.user_info.lapak_id}`
+      `/api/lapak/get_data_buat_catatan/${AppState.currentUser.user_info.lapak_id}`
     );
     if (!resp.ok && resp.status === 409) {
       existsEl.style.display = "block";
@@ -325,7 +325,7 @@ async function populateLapakDashboard() {
   document.getElementById("product-search-container").style.display = "none";
 
   try {
-    const resp = await fetch(`/api/get_data_buat_catatan/${lapakId}`);
+    const resp = await fetch(`/api/lapak/get_data_buat_catatan/${lapakId}`);
     if (!resp.ok) {
       const result = await resp.json();
       if (resp.status === 409 && result.already_exists) {
@@ -590,7 +590,7 @@ async function handleNotifySupplier(button) {
   button.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
 
   try {
-    const resp = await fetch('/api/notify_supplier', {
+    const resp = await fetch('/api/lapak/notify_supplier', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ product_id: productId, lapak_id: lapakId })
@@ -733,7 +733,7 @@ async function handleKirimLaporan() {
   submitBtn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Mengirim...`;
 
   try {
-    const response = await fetch("/api/submit_catatan_harian", {
+    const response = await fetch("/api/lapak/submit_catatan_harian", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -760,7 +760,7 @@ async function populateHistoryLaporanPage() {
   loadingEl.style.display = "block";
   listEl.innerHTML = "";
   const resp = await fetch(
-    `/api/get_history_laporan/${AppState.currentUser.user_info.lapak_id}`
+    `/api/lapak/get_history_laporan/${AppState.currentUser.user_info.lapak_id}`
   );
   if (!resp.ok) {
     loadingEl.innerHTML =
