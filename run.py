@@ -22,7 +22,8 @@ def seed_db_command():
 
     try:
         # 1. Buat SuperOwner
-        super_owner = SuperOwner(username="cinda", password="cinda", nama_lengkap="Pemilik UMKM Cinda")
+        super_owner = SuperOwner(username="cinda", nama_lengkap="Pemilik UMKM Cinda")
+        super_owner.set_password("cinda")
         db.session.add(super_owner)
         db.session.flush()  # Dapatkan ID super_owner
         print(f"SuperOwner '{super_owner.username}' dibuat (ID: {super_owner.id}).")
@@ -41,9 +42,9 @@ def seed_db_command():
                 nama_lengkap=data["nama"],
                 username=data["user"],
                 email=data["email"],
-                password=data["user"],  # Password disamakan dgn username
                 super_owner_id=super_owner.id # Tautkan ke SuperOwner
             )
+            owner.set_password(data["user"])
             db.session.add(owner)
             db.session.flush() # Dapatkan ID owner
             
@@ -74,9 +75,9 @@ def seed_db_command():
                     nama_lengkap=data["nama"],
                     username=data["user"],
                     email=data["email"],
-                    password=data["user"],
                     created_by_owner_id=owner.id # Tautkan ke Owner-nya
                 )
+                admin.set_password(data["user"])
                 db.session.add(admin)
                 db.session.flush() # Dapatkan ID admin
                 
@@ -99,12 +100,12 @@ def seed_db_command():
                 supplier = Supplier(
                     nama_supplier=data["nama"],
                     username=data["user"],
-                    password=data["user"],
                     nomor_register=data["reg"],
                     metode_pembayaran=data["metode"],
                     nomor_rekening=data["rek"],
                     owner_id=owner.id # Tautkan ke Owner-nya
                 )
+                supplier.set_password(data["user"])
                 # Buat SupplierBalance untuk supplier ini
                 supplier.balance = SupplierBalance(balance=0.0) 
                 db.session.add(supplier)

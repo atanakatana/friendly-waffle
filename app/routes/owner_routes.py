@@ -143,7 +143,7 @@ def update_admin(admin_id):
         admin.username = data['username']
         admin.email = data['email']
         admin.nomor_kontak = data['nomor_kontak']
-        if data.get('password'): admin.password = data['password']
+        if data.get('password'): admin.set_password(data['password'])
         db.session.commit()
         return jsonify({"success": True, "message": "Data Admin berhasil diperbarui"})
     except IntegrityError as e:
@@ -275,9 +275,7 @@ def update_supplier(supplier_id):
         supplier.alamat = data.get('alamat')
         supplier.metode_pembayaran = data.get('metode_pembayaran')
         supplier.nomor_rekening = data.get('nomor_rekening')
-        if data.get('password'):
-            supplier.password = data['password']
-        
+        if data.get('password'):supplier.set_password(data['password'])
         db.session.commit()
         return jsonify({"success": True, "message": "Data Supplier berhasil diperbarui"})
     except IntegrityError:
