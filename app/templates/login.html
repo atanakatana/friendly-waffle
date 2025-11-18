@@ -42,3 +42,85 @@
   </div>
 
 {% endblock %}
+
+{% block scripts %}
+<script>
+    // Pastikan DOM sudah siap
+    document.addEventListener("DOMContentLoaded", function() {
+        
+        // Ambil form login
+        const loginForm = document.getElementById("login-form");
+        if (loginForm) {
+            
+            // Tambahkan event listener untuk 'submit'
+            loginForm.addEventListener("submit", function(e) {
+                // Hentikan perilaku default form (yang akan me-refresh halaman)
+                e.preventDefault();
+
+                // Ambil data dari input
+                const username = document.getElementById("username").value;
+                const password = document.getElementById("password").value;
+
+                // Buat objek data JSON
+                const data = {
+                    username: username,
+                    password: password
+                };
+
+                // Kirim data menggunakan fetch
+                fetch("{{ url_for('auth.handle_login') }}", { // Menggunakan url_for untuk URL yang dinamis
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(data) // Ubah data JS menjadi string JSON
+                })
+                .then(response => response.json()) // Ubah respons server menjadi objek JS
+                .then(result => {
+                    if (result.success) {
+                        // Jika sukses, arahkan ke dashboard yang sesuai
+                        // (Anda perlu menyesuaikan logika ini)
+                        alert("Login berhasil! Role: " + result.role);
+                        
+                        // Contoh pengalihan (redirect)
+                        if (result.role === 'owner') {
+                            window.location.href = "/owner/dashboard"; // Ganti dengan URL rute owner Anda
+                        } else if (result.role === 'lapak') {
+                            window.location.href = "/lapak/dashboard"; // Ganti dengan URL rute lapak Anda
+                        } else if (result.role === 'supplier') {
+                            window.location.href = "/supplier/dashboard"; // Ganti dengan URL rute supplier Anda
+                        } else if (result.role === 'superowner') {
+                            window.location.href = "/superowner/dashboard"; // Ganti dengan URL rute superowner Anda
+                        } else {
+                            window.location.href = "/"; // Fallback
+                        }
+                    } else {
+                        // Jika gagal, tampilkan pesan error
+                        alert("Login Gagal: " + result.message);
+                    }
+                })
+                .catch(error => {
+                    // Tangani jika ada error jaringan
+                    console.error("Error:", error);
+                    alert("Terjadi kesalahan saat mencoba login.");
+                });
+            });
+        }
+    });
+
+    // Fungsi untuk toggle visibilitas password (sepertinya sudah Anda miliki)
+    function togglePasswordVisibility(button, inputId) {
+        const passwordInput = document.getElementById(inputId);
+        const icon = button.querySelector('i');
+        if (passwordInput.type === "password") {
+            passwordInput.type = "text";
+            icon.classList.remove('bi-eye-slash');
+            icon.classList.add('bi-eye');
+        } else {
+            passwordInput.type = "password";
+            icon.classList.remove('bi-eye');
+            icon.classList.add('bi-eye-slash');
+        }
+    }
+</script>
+{% endblock %}
